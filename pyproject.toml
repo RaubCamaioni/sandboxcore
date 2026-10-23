@@ -1,0 +1,31 @@
+[project]
+name = "containerwebcore"
+version = "0.1.0"
+description = "Shared sandbox core for web apps that run user-submitted code in rootless podman containers"
+readme = "README.md"
+# 3.12: the Python runtime's line trace uses sys.monitoring
+requires-python = ">=3.12"
+# no dependencies: the same package is installed in the web app and in every sandbox image
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+
+[project.scripts]
+# the sandbox image's entrypoint for apps whose tools need no post-processing
+containerwebcore-python = "containerwebcore.python.runner:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["integration: needs a real podman and a sandbox image"]
+testpaths = ["tests"]
