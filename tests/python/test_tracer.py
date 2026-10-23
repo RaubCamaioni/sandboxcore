@@ -3,7 +3,8 @@ import os
 import struct
 import textwrap
 
-from containerwebcore.python.tracer import LineTracer, open_trace
+from containerwebcore.python.tracer import LineTracer
+from containerwebcore.trace_writer import TraceWriter
 
 
 def run_tool(tmp_path, code, fd):
@@ -11,7 +12,7 @@ def run_tool(tmp_path, code, fd):
     tool.write_text(textwrap.dedent(code))
     spec = importlib.util.spec_from_file_location("t", tool)
     mod = importlib.util.module_from_spec(spec)
-    tracer = LineTracer(tool, fd)
+    tracer = LineTracer(tool, TraceWriter(fd))
     tracer.start()
     try:
         spec.loader.exec_module(mod)
@@ -65,8 +66,3 @@ def test_full_pipe_drops_without_raising(tmp_path):
     # > 64 KB of records: the pipe fills and later writes must be dropped silently
     assert run_tool(tmp_path, "def t():\n    for i in range(100000):\n        pass\n    return 1\n", w) == 1
 
-
-def test_open_trace_without_reader_is_none(tmp_path):
-    os.mkfifo(tmp_path / "trace")
-    assert open_trace(str(tmp_path / "trace")) is None
-    assert open_trace(str(tmp_path / "missing")) is None

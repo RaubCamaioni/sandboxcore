@@ -1,40 +1,26 @@
-"""Line trace: write the executed line numbers of the tool file as 4-byte records.
+"""Line events for Python tools: `sys.monitoring` LINE events, written through a `TraceWriter`.
 
-Only code objects whose filename is the tool file are traced, so library code
-(numpy, cadquery, ...) is never reported. Every record is ``contract.TRACE_RECORD``
-written non-blocking; a full pipe or a missing reader drops records silently so the
-trace can never slow down or fail the tool.
+This is the Python-specific half of the line trace (docs/trace-protocol.md). Only code objects whose
+filename is the tool file are traced, so library code (numpy, cadquery, ...) is never reported.
 """
 
-import os
 import sys
 from pathlib import Path
 
-from containerwebcore.contract import TRACE_RECORD
+from containerwebcore.trace_writer import TraceWriter
 
 TOOL_ID = sys.monitoring.PROFILER_ID
 
 
-def open_trace(path: str) -> int | None:
-    """Open the write end of the trace FIFO without blocking; None when no reader waits."""
-    try:
-        return os.open(path, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError:
-        return None
-
-
 class LineTracer:
-    def __init__(self, tool_file: Path, fd: int):
+    def __init__(self, tool_file: Path, writer: TraceWriter):
         self.filename = str(tool_file)
-        self.fd = fd
+        self.writer = writer
 
     def _on_line(self, code, line):
         if code.co_filename != self.filename:
             return sys.monitoring.DISABLE  # never called again for this code object
-        try:
-            os.write(self.fd, TRACE_RECORD.pack(line))
-        except (BlockingIOError, BrokenPipeError, OSError):
-            pass
+        self.writer.line(line)
 
     def start(self):
         sys.monitoring.use_tool_id(TOOL_ID, "sandbox-trace")

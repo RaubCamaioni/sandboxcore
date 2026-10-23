@@ -24,3 +24,11 @@ Changes from the copies in the apps:
 - File names and the trace record live in `containerwebcore.contract`; host and runtime no longer
   keep separate copies of the serializer or the record format.
 - Logs go to the `containerwebcore` logger instead of `uvicorn.error` (see the README for routing it).
+- The line trace is a written, language-neutral protocol ([docs/trace-protocol.md](docs/trace-protocol.md)):
+  - the host passes the FIFO in `CONTAINERWEBCORE_TRACE` and still in `PYWEBTOOLS_TRACE`, so images built
+    before containerwebcore keep tracing; runtimes read the new name first;
+  - `containerwebcore.trace_writer.TraceWriter` is the runtime's writer, apart from the Python event source
+    (`python.tracer.LineTracer(tool, writer)`; `open_trace` is gone);
+  - `containerwebcore.conformance` checks any runtime command against the protocol;
+  - `runtimes/go`: a Go reference (writer, source instrumenter, `cwc-go-run`), experimental: trace only,
+    no args.json/result.json contract for Go yet.

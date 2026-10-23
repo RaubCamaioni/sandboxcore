@@ -57,7 +57,7 @@ def test_runner_takes_the_trace_path_from_the_environment(tmp_path):
         RUNNER + ["--file", str(tool), "--workdir", str(tmp_path)],
         check=True,
         timeout=30,
-        env={**os.environ, "PYWEBTOOLS_TRACE": str(fifo)},
+        env={**os.environ, "CONTAINERWEBCORE_TRACE": str(fifo)},
     )
     os.close(wfd)
     assert len(os.read(rfd, 4096)) >= 4  # at least one line record arrived

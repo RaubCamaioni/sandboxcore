@@ -22,10 +22,13 @@ containerwebcore/
     podman.py      PodmanRunner: startup self-test, one container per run, outcome classification
     trace.py       read_trace, TraceChannel, TraceRegistry: line numbers to a server-sent-events stream
     rundir.py      make_run_dir, delete_later, upload_path, resolve_run_file, read_run_file
+  trace_writer.py  sandbox side, any language's template: open the trace FIFO, write line records
+  conformance.py   checks a runtime (any language) against the line trace protocol
   python/          the Python language
     annotations.py host side: the entrypoint parameter allow-list, never evaluated
     runner.py      sandbox side: call the entrypoint, write result.json, optional `finish` hook
-    tracer.py      sandbox side: sys.monitoring line tracer writing to the trace FIFO
+    tracer.py      sandbox side: sys.monitoring LINE events into a TraceWriter
+runtimes/go/       Go reference (experimental): trace writer, source instrumenter, cwc-go-run
 ```
 
 It is all standard library, so the same distribution installs in the app image and in each sandbox
@@ -35,7 +38,9 @@ contracts beyond "a function named like its file" (for example the catalog's `ex
 
 Another language later is a sibling of `python/` (its annotation rules for the host, and a runtime
 the sandbox image runs) plus a sandbox image; `host/` does not change. The runtime may be written in
-that language. It only has to honour `contract.py`.
+that language. It only has to honour `contract.py` and the line trace protocol
+([trace-protocol.md](trace-protocol.md)), which `containerwebcore.conformance` checks. `runtimes/go`
+shows the trace for a compiled language: the tool's source is instrumented before it is built.
 
 ## The contract
 
@@ -78,8 +83,9 @@ together.
 
 ## Testing
 
-- `run-tests.sh`: the unit suite in a clean `python:3.12-slim` container (FIFOs, `loop.add_reader` and
-  `sys.monitoring` need Linux and Python 3.12).
+- `run-tests.sh`: the unit suite, the Go module's tests and the trace conformance of every runtime, in
+  a container with Python 3.12 and Go (`containers/Containerfile.test`). FIFOs, `loop.add_reader` and
+  `sys.monitoring` need Linux and Python 3.12.
 - `run-integration.sh`: builds `containers/Containerfile.sandbox` and runs `tests/integration` against
   a real rootless podman. It needs cgroup v2 with the memory and pids controllers delegated. On WSL,
   each podman call takes about 0.5 s; set `SANDBOX_TEST_SLACK_SECONDS=2` there, because two tests bound

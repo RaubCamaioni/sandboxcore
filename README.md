@@ -11,7 +11,9 @@ apps get the fix.
   what a run left behind.
 - **python** (language): the entrypoint-annotation allow-list (host side) and the runner and line tracer
   (sandbox side).
-- **contract**: the file names and trace record format the two sides agree on.
+- **contract**: the file names and trace record format the two sides agree on. The line trace is a
+  language-neutral protocol ([docs/trace-protocol.md](docs/trace-protocol.md)) with a conformance kit
+  (`containerwebcore.conformance`) and a Go reference runtime in `runtimes/go`.
 
 Standard library only, Python 3.12+. Design and trust boundary: [docs/design.md](docs/design.md).
 
@@ -91,7 +93,7 @@ uid `SandboxConfig.sandbox_uid` (1001). `containers/Containerfile.sandbox` is a 
 ## Develop
 
 ```sh
-./run-tests.sh -q              # unit tests in a python:3.12 container (needs podman; WSL works)
+./run-tests.sh -q              # unit, Go and trace conformance tests in a container (needs podman; WSL works)
 ./run-integration.sh -v        # real containers: builds the reference sandbox image first
 ```
 

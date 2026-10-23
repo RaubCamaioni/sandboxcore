@@ -32,10 +32,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: false
+
       - name: Install
         run: pip install -e ".[dev]"
 
-      - name: Unit tests
+      - name: Go runtime
+        working-directory: runtimes/go
+        run: go vet ./... && go test ./...
+
+      - name: Unit and trace conformance tests (Python and Go runtimes)
         run: python -m pytest -q
 
   integration:

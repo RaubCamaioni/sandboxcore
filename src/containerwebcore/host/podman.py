@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Optional
 
 from containerwebcore import serializer
-from containerwebcore.contract import RESULT_FILE, TRACE_ENV, TRACE_FILE
+from containerwebcore.contract import RESULT_FILE, TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE
 from containerwebcore.host.config import SandboxConfig
 from containerwebcore.host.rundir import read_run_file
 from containerwebcore.host.trace import read_trace
@@ -295,7 +295,7 @@ class PodmanRunner:
             f"{run_dir}:{run_dir}:U",
             # the trace FIFO travels as an environment variable: a sandbox image that predates the
             # trace ignores it (no events, page falls back), where an unknown flag would fail the run
-            *(["-e", f"{TRACE_ENV}={trace}"] if trace is not None else []),
+            *(["-e", f"{TRACE_ENV}={trace}", "-e", f"{TRACE_ENV_LEGACY}={trace}"] if trace is not None else []),
             self.config.image,
             "--file",
             str(run_dir / tool.name),

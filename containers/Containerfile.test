@@ -1,0 +1,8 @@
+# Test image: Python 3.12 (the sandbox's Python) plus a Go toolchain for the Go reference runtime and
+# the cross-language trace conformance tests. Used by run-tests.sh.
+FROM docker.io/library/golang:1.23-bookworm AS go
+
+FROM docker.io/library/python:3.12-slim-bookworm
+COPY --from=go /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:$PATH GOTOOLCHAIN=local GOFLAGS=-mod=mod
+RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check "pytest>=8" "pytest-asyncio>=0.24"

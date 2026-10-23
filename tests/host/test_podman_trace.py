@@ -19,6 +19,7 @@ async def test_run_creates_fifo_and_passes_trace(tmp_path):
     tool = tool_and_result(tmp_path)
     fake = FakePodman(OK)
     await ready_runner(cfg(), fake).run(tool, tmp_path, on_line=lambda n: None)
+    assert f"CONTAINERWEBCORE_TRACE={tmp_path / 'trace'}" in fake.calls[0]
     assert f"PYWEBTOOLS_TRACE={tmp_path / 'trace'}" in fake.calls[0]
     assert stat.S_ISFIFO(os.stat(tmp_path / "trace").st_mode)
 
@@ -56,7 +57,7 @@ async def test_run_without_on_line_has_no_trace(tmp_path):
     tool = tool_and_result(tmp_path)
     fake = FakePodman(OK)
     await ready_runner(cfg(), fake).run(tool, tmp_path)
-    assert not any(a.startswith("PYWEBTOOLS_TRACE=") for a in fake.calls[0]) and not (tmp_path / "trace").exists()
+    assert not any("_TRACE=" in a for a in fake.calls[0]) and not (tmp_path / "trace").exists()
 
 
 async def test_run_proceeds_when_fifo_cannot_be_created(tmp_path):
@@ -64,4 +65,4 @@ async def test_run_proceeds_when_fifo_cannot_be_created(tmp_path):
     (tmp_path / "trace").mkdir()  # mkfifo fails: EEXIST
     fake = FakePodman(OK)
     r = await ready_runner(cfg(), fake).run(tool, tmp_path, on_line=lambda n: None)
-    assert r.outcome is Outcome.OK and not any(a.startswith("PYWEBTOOLS_TRACE=") for a in fake.calls[0])
+    assert r.outcome is Outcome.OK and not any("_TRACE=" in a for a in fake.calls[0])

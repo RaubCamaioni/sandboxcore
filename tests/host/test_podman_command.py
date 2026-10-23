@@ -49,4 +49,6 @@ def test_command_passes_trace_path_as_environment_not_a_flag():
     cmd = PodmanRunner(CFG).command("run-x", Path("/r/x/t.py"), Path("/r/x"), trace=Path("/r/x/trace"))
     assert "--trace" not in cmd and cmd[-2:] == ["--workdir", "/r/x"]
     image_at = cmd.index(CFG.image)
-    assert "PYWEBTOOLS_TRACE=/r/x/trace" in cmd[:image_at] and cmd[cmd.index("PYWEBTOOLS_TRACE=/r/x/trace") - 1] == "-e"
+    # both names: images built before containerwebcore read only PYWEBTOOLS_TRACE
+    for variable in ("CONTAINERWEBCORE_TRACE=/r/x/trace", "PYWEBTOOLS_TRACE=/r/x/trace"):
+        assert variable in cmd[:image_at] and cmd[cmd.index(variable) - 1] == "-e"

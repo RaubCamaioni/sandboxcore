@@ -7,8 +7,9 @@ becomes an error string labelled `finish_label`.
 """
 
 from containerwebcore import serializer
-from containerwebcore.contract import ARGS_FILE, RESULT_FILE, TRACE_ENV
-from containerwebcore.python.tracer import LineTracer, open_trace
+from containerwebcore.contract import ARGS_FILE, RESULT_FILE
+from containerwebcore.python.tracer import LineTracer
+from containerwebcore.trace_writer import TraceWriter, trace_path
 
 from typing import Any, Callable, Optional
 from functools import partial
@@ -30,19 +31,18 @@ def runner(
 ) -> Any:
     os.chdir(workdir)
 
-    # optional line trace: 4-byte line numbers of the tool file to a FIFO the host reads
+    # optional line trace (docs/trace-protocol.md): line numbers of the tool file to a FIFO the host reads
     tracer = None
-    if trace is not None:
-        fd = open_trace(trace)
-        if fd is not None:
-            tracer = LineTracer(file, fd)
-            tracer.start()
+    writer = TraceWriter.open(trace) if trace else None
+    if writer is not None:
+        tracer = LineTracer(file, writer)
+        tracer.start()
     try:
         _run(file, finish, finish_label)
     finally:
         if tracer is not None:
             tracer.stop()
-            os.close(tracer.fd)
+            writer.close()
 
 
 def _run(file: Path, finish: Optional[Finish], finish_label: str) -> None:
@@ -96,7 +96,7 @@ def main(argv: Optional[list[str]] = None, finish: Optional[Finish] = None, fini
     parser.add_argument("--file", "-f", type=str, required=True)
     parser.add_argument("--workdir", "-w", type=str, required=True)
     # the host passes the trace FIFO in the environment; the flag exists for local use
-    parser.add_argument("--trace", "-t", type=str, default=os.environ.get(TRACE_ENV))
+    parser.add_argument("--trace", "-t", type=str, default=trace_path())
     args = parser.parse_args(argv)
 
     file = Path(args.file)
