@@ -4,7 +4,7 @@ from typing import Mapping, Optional
 
 _UNITS = {"g": "GB", "m": "MB", "k": "KB"}
 
-DEFAULT_RUN_DIR = "/tmp/containerwebcore-runs"
+DEFAULT_RUN_DIR = "/tmp/sandboxcore-runs"
 # uid of the unprivileged user a sandbox image runs tools as (`useradd -u 1001` in its Containerfile)
 DEFAULT_SANDBOX_UID = 1001
 

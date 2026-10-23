@@ -1,4 +1,4 @@
-from containerwebcore.host.podman import PodmanRunner
+from sandboxcore.host.podman import PodmanRunner
 from tests.host.test_podman_run import FakePodman, cfg
 
 

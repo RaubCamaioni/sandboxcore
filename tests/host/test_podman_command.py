@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from containerwebcore.host.podman import PodmanRunner
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore.host.podman import PodmanRunner
+from sandboxcore.host.config import SandboxConfig
 from tests import IMAGE
 
 CFG = SandboxConfig.from_environment({}, image=IMAGE)
@@ -49,6 +49,6 @@ def test_command_passes_trace_path_as_environment_not_a_flag():
     cmd = PodmanRunner(CFG).command("run-x", Path("/r/x/t.py"), Path("/r/x"), trace=Path("/r/x/trace"))
     assert "--trace" not in cmd and cmd[-2:] == ["--workdir", "/r/x"]
     image_at = cmd.index(CFG.image)
-    # both names: images built before containerwebcore read only PYWEBTOOLS_TRACE
-    for variable in ("CONTAINERWEBCORE_TRACE=/r/x/trace", "PYWEBTOOLS_TRACE=/r/x/trace"):
+    # both names: images built before sandboxcore read only PYWEBTOOLS_TRACE
+    for variable in ("SANDBOXCORE_TRACE=/r/x/trace", "PYWEBTOOLS_TRACE=/r/x/trace"):
         assert variable in cmd[:image_at] and cmd[cmd.index(variable) - 1] == "-e"

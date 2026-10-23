@@ -8,11 +8,11 @@ FROM python:3.12-slim-bookworm
 RUN useradd -u 1001 -m app && mkdir -p /venvs && chown app:app /venvs
 
 USER app
-COPY --chown=app:app pyproject.toml README.md /tmp/containerwebcore/
-COPY --chown=app:app src /tmp/containerwebcore/src
+COPY --chown=app:app pyproject.toml README.md /tmp/sandboxcore/
+COPY --chown=app:app src /tmp/sandboxcore/src
 RUN python3 -m venv /venvs/sandbox && \
-  /venvs/sandbox/bin/pip install --no-cache-dir /tmp/containerwebcore && \
-  rm -rf /tmp/containerwebcore
+  /venvs/sandbox/bin/pip install --no-cache-dir /tmp/sandboxcore && \
+  rm -rf /tmp/sandboxcore
 
 WORKDIR /box
-ENTRYPOINT ["/venvs/sandbox/bin/containerwebcore-python"]
+ENTRYPOINT ["/venvs/sandbox/bin/sandboxcore-python"]

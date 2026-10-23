@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from containerwebcore.python.runner import main
+from sandboxcore.python.runner import main
 
 
 @pytest.fixture

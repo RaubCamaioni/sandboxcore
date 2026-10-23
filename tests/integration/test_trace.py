@@ -8,8 +8,8 @@ import time
 
 import pytest
 
-from containerwebcore.host.podman import Outcome, PodmanRunner
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore.host.podman import Outcome, PodmanRunner
+from sandboxcore.host.config import SandboxConfig
 
 from tests.integration.test_sandbox import SLACK, config, make_run, runner  # noqa: F401  (fixtures)
 

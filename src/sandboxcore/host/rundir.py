@@ -16,7 +16,7 @@ from contextlib import suppress
 from pathlib import Path, PurePosixPath
 from typing import Optional
 
-from containerwebcore.contract import INPUTS_DIR
+from sandboxcore.contract import INPUTS_DIR
 
 RUN_DIR_NAME_LENGTH = 32
 RUN_DIR_CHARS = string.ascii_letters + string.digits + "-_"

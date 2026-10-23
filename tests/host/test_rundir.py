@@ -7,7 +7,7 @@ import threading
 
 import pytest
 
-from containerwebcore.host.rundir import (
+from sandboxcore.host.rundir import (
     RUN_DIR_NAME_LENGTH,
     RunFileError,
     delete_later,

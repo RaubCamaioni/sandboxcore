@@ -1,11 +1,11 @@
-"""The runtimes in this repository, described for `containerwebcore.conformance`."""
+"""The runtimes in this repository, described for `sandboxcore.conformance`."""
 
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-from containerwebcore.conformance import Runtime
+from sandboxcore.conformance import Runtime
 
 GO_MODULE = Path(__file__).resolve().parents[2] / "runtimes" / "go"
 
@@ -13,7 +13,7 @@ PYTHON = Runtime(
     name="python",
     suffix=".py",
     command=lambda tool, run_dir: [
-        sys.executable, "-m", "containerwebcore.python.runner", "--file", str(tool), "--workdir", str(run_dir),
+        sys.executable, "-m", "sandboxcore.python.runner", "--file", str(tool), "--workdir", str(run_dir),
     ],
     probe=(
         "def probe():\n"  # 1
@@ -32,8 +32,8 @@ def go_runtime(build_dir: Path) -> Runtime | None:
     """The Go reference runtime, built into `build_dir`; None when no Go toolchain is installed."""
     if shutil.which("go") is None:
         return None
-    binary = build_dir / "cwc-go-run"
-    subprocess.run(["go", "build", "-o", str(binary), "./cmd/cwc-go-run"], cwd=GO_MODULE, check=True)
+    binary = build_dir / "sandboxcore-go-run"
+    subprocess.run(["go", "build", "-o", str(binary), "./cmd/sandboxcore-go-run"], cwd=GO_MODULE, check=True)
     return Runtime(
         name="go",
         suffix=".go",

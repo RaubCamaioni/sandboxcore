@@ -1,5 +1,5 @@
 [project]
-name = "containerwebcore"
+name = "sandboxcore"
 version = "0.1.0"
 description = "Shared sandbox core for web apps that run user-submitted code in rootless podman containers"
 readme = "README.md"
@@ -13,7 +13,7 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24"]
 
 [project.scripts]
 # the sandbox image's entrypoint for apps whose tools need no post-processing
-containerwebcore-python = "containerwebcore.python.runner:main"
+sandboxcore-python = "sandboxcore.python.runner:main"
 
 [build-system]
 requires = ["setuptools>=68"]

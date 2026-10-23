@@ -1,4 +1,4 @@
-# containerwebcore
+# sandboxcore
 
 The sandbox core shared by [PyTools](https://github.com/RaubCamaioni/PyTools) and the
 [CadQuery Catalog](https://github.com/RaubCamaioni/cadquery-catalog). Both run user-submitted code in
@@ -13,7 +13,7 @@ apps get the fix.
   (sandbox side).
 - **contract**: the file names and trace record format the two sides agree on. The line trace is a
   language-neutral protocol ([docs/trace-protocol.md](docs/trace-protocol.md)) with a conformance kit
-  (`containerwebcore.conformance`) and a Go reference runtime in `runtimes/go`.
+  (`sandboxcore.conformance`) and a Go reference runtime in `runtimes/go`.
 
 Standard library only, Python 3.12+. Design and trust boundary: [docs/design.md](docs/design.md).
 
@@ -24,7 +24,7 @@ Pin a release tag. A tarball needs no git in the image build:
 ```toml
 # server/pyproject.toml and sandbox/pyproject.toml
 dependencies = [
-    "containerwebcore @ https://github.com/RaubCamaioni/containerwebcore/archive/refs/tags/v0.1.0.tar.gz",
+    "sandboxcore @ https://github.com/RaubCamaioni/sandboxcore/archive/refs/tags/v0.1.0.tar.gz",
 ]
 ```
 
@@ -34,10 +34,10 @@ dependencies = [
 
 ```python
 import os
-from containerwebcore.host import PodmanRunner, SandboxConfig, Outcome, SandboxBusy, SandboxUnavailable
-from containerwebcore.host import TraceRegistry, make_run_dir, delete_later, upload_path, resolve_run_file, RunFileError
-from containerwebcore.python.annotations import check_annotation, resolve_annotation, AnnotationError
-from containerwebcore import serializer
+from sandboxcore.host import PodmanRunner, SandboxConfig, Outcome, SandboxBusy, SandboxUnavailable
+from sandboxcore.host import TraceRegistry, make_run_dir, delete_later, upload_path, resolve_run_file, RunFileError
+from sandboxcore.python.annotations import check_annotation, resolve_annotation, AnnotationError
+from sandboxcore import serializer
 
 config = SandboxConfig.from_environment(
     os.environ, image="docker.io/raubcamaioni/pywebtools-sandbox:latest", run_dir="/tmp/pywebtools-runs"
@@ -58,12 +58,12 @@ Serve downloads with `resolve_run_file(config.run_dir, requested)`. It raises `R
 anything outside a run directory, symlinks included. Read a file a run produced with
 `read_run_file(path, limit)`.
 
-Logs go to the `containerwebcore` logger. Under uvicorn, route it next to uvicorn's own:
+Logs go to the `sandboxcore` logger. Under uvicorn, route it next to uvicorn's own:
 
 ```python
 from uvicorn.config import LOGGING_CONFIG
 log_config = {**LOGGING_CONFIG, "loggers": {**LOGGING_CONFIG["loggers"],
-              "containerwebcore": {"handlers": ["default"], "level": "INFO", "propagate": False}}}
+              "sandboxcore": {"handlers": ["default"], "level": "INFO", "propagate": False}}}
 uvicorn.run(app, ..., log_config=log_config)
 ```
 
@@ -73,14 +73,14 @@ Install the package next to the tools' dependencies and make the runner the entr
 post-processing, use the console script:
 
 ```dockerfile
-ENTRYPOINT ["/venvs/sandbox/bin/containerwebcore-python"]
+ENTRYPOINT ["/venvs/sandbox/bin/sandboxcore-python"]
 ```
 
 An app that turns results into files inside the sandbox wraps `main` with a `finish` hook:
 
 ```python
 # sandbox/src/sandbox/runner.py in the CadQuery Catalog
-from containerwebcore.python.runner import main as run
+from sandboxcore.python.runner import main as run
 from sandbox.export import export_model
 
 def main():
@@ -97,6 +97,6 @@ uid `SandboxConfig.sandbox_uid` (1001). `containers/Containerfile.sandbox` is a 
 ./run-integration.sh -v        # real containers: builds the reference sandbox image first
 ```
 
-Release: bump `version` in `pyproject.toml` and `__version__` in `src/containerwebcore/__init__.py`,
+Release: bump `version` in `pyproject.toml` and `__version__` in `src/sandboxcore/__init__.py`,
 add a CHANGELOG entry, merge, and tag `v<version>`. CI refuses a tag that doesn't match. Then bump the
 pinned tag in both apps (server and sandbox).

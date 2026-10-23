@@ -7,7 +7,7 @@ filename is the tool file are traced, so library code (numpy, cadquery, ...) is 
 import sys
 from pathlib import Path
 
-from containerwebcore.trace_writer import TraceWriter
+from sandboxcore.trace_writer import TraceWriter
 
 TOOL_ID = sys.monitoring.PROFILER_ID
 

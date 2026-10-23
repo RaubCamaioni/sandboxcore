@@ -1,4 +1,4 @@
-// Package trace is the Go runtime's writer for the containerwebcore line trace protocol
+// Package trace is the Go runtime's writer for the sandboxcore line trace protocol
 // (docs/trace-protocol.md): it opens the FIFO the host offers and writes 4-byte line records,
 // never blocking and never failing the program.
 //
@@ -10,8 +10,8 @@ import "os"
 
 const (
 	// Env carries the trace FIFO's path.
-	Env = "CONTAINERWEBCORE_TRACE"
-	// EnvLegacy carries the same path for hosts and images from before containerwebcore.
+	Env = "SANDBOXCORE_TRACE"
+	// EnvLegacy carries the same path for hosts and images from before sandboxcore.
 	EnvLegacy = "PYWEBTOOLS_TRACE"
 )
 

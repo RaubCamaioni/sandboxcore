@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional, Sequence
 
-from containerwebcore.contract import TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE, TRACE_RECORD
+from sandboxcore.contract import TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE, TRACE_RECORD
 
 READ_CHUNK = 65536
 
@@ -141,7 +141,7 @@ def check_probe(runtime: Runtime, run_dir: Path) -> Capture:
 
 
 def check_legacy_variable(runtime: Runtime, run_dir: Path) -> Capture:
-    """The trace path in PYWEBTOOLS_TRACE alone is honoured (images and hosts from before containerwebcore)."""
+    """The trace path in PYWEBTOOLS_TRACE alone is honoured (images and hosts from before sandboxcore)."""
     c = run_traced(runtime, run_dir, variables=(TRACE_ENV_LEGACY,))
     _succeeded(runtime, c, "a run traced through the legacy variable must succeed")
     assert set(runtime.probe_lines) <= set(c.records), f"{runtime.name}: {TRACE_ENV_LEGACY} must be read too"

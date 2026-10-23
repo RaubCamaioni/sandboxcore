@@ -1,7 +1,7 @@
 import json
 
-from containerwebcore.host.podman import Outcome, PodmanRunner
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore.host.podman import Outcome, PodmanRunner
+from sandboxcore.host.config import SandboxConfig
 from tests import IMAGE
 
 CFG = SandboxConfig.from_environment({}, image=IMAGE)
@@ -85,7 +85,7 @@ def test_result_json_invalid_utf8_is_crashed(tmp_path):
 
 
 def test_result_json_oversized_is_crashed(tmp_path):
-    from containerwebcore.host.podman import RESULT_MAX_BYTES
+    from sandboxcore.host.podman import RESULT_MAX_BYTES
 
     (tmp_path / "result.json").write_bytes(b'"' + b"x" * RESULT_MAX_BYTES + b'"')
     assert classify(tmp_path).outcome is Outcome.CRASHED

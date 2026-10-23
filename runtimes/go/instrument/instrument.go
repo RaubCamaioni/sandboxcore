@@ -1,6 +1,6 @@
 // Package instrument rewrites a Go tool file so it reports its lines through package trace.
 //
-// A call `__cwctrace.Line(n); ` goes in front of every statement of every statement list, on the
+// A call `__sandboxcore_trace.Line(n); ` goes in front of every statement of every statement list, on the
 // same line, so every original line keeps its number (and compiler messages still point at the
 // uploaded file). The trace package is imported right after the package clause and started by the
 // first package-level variable, before any of the tool's own code runs.
@@ -15,9 +15,9 @@ import (
 )
 
 // ImportPath is the trace package an instrumented tool imports.
-const ImportPath = "github.com/RaubCamaioni/containerwebcore/runtimes/go/trace"
+const ImportPath = "github.com/RaubCamaioni/sandboxcore/runtimes/go/trace"
 
-const alias = "__cwctrace"
+const alias = "__sandboxcore_trace"
 
 type insertion struct {
 	offset int

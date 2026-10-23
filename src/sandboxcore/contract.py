@@ -21,9 +21,9 @@ RESULT_FILE = "result.json"
 INPUTS_DIR = "inputs"
 TRACE_FILE = "trace"
 # the trace FIFO travels as an environment variable: a sandbox image that predates the trace ignores it,
-# where an unknown flag would fail the run. The host sets both names: images built before containerwebcore
+# where an unknown flag would fail the run. The host sets both names: images built before sandboxcore
 # read only the legacy one.
-TRACE_ENV = "CONTAINERWEBCORE_TRACE"
+TRACE_ENV = "SANDBOXCORE_TRACE"
 TRACE_ENV_LEGACY = "PYWEBTOOLS_TRACE"
 # one executed line number of the tool file: uint32, little-endian, 1-based
 TRACE_RECORD = struct.Struct("<I")

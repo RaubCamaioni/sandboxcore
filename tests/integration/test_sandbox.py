@@ -15,9 +15,9 @@ from pathlib import Path
 
 import pytest
 
-from containerwebcore import serializer
-from containerwebcore.host.podman import Outcome, PodmanRunner
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore import serializer
+from sandboxcore.host.podman import Outcome, PodmanRunner
+from sandboxcore.host.config import SandboxConfig
 
 # extra seconds a slow podman host (WSL: ~0.5 s per podman call) may take beyond the production bounds
 SLACK = float(os.environ.get("SANDBOX_TEST_SLACK_SECONDS", "0"))

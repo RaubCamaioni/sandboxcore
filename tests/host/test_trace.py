@@ -2,7 +2,7 @@ import asyncio
 import os
 import struct
 
-from containerwebcore.host.trace import TraceChannel, TraceRegistry, read_trace
+from sandboxcore.host.trace import TraceChannel, TraceRegistry, read_trace
 
 
 def records(*lines):

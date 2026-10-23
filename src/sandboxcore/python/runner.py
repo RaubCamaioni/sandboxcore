@@ -6,10 +6,10 @@ work in the sandbox after the call (the CadQuery catalogue turns a model into ST
 becomes an error string labelled `finish_label`.
 """
 
-from containerwebcore import serializer
-from containerwebcore.contract import ARGS_FILE, RESULT_FILE
-from containerwebcore.python.tracer import LineTracer
-from containerwebcore.trace_writer import TraceWriter, trace_path
+from sandboxcore import serializer
+from sandboxcore.contract import ARGS_FILE, RESULT_FILE
+from sandboxcore.python.tracer import LineTracer
+from sandboxcore.trace_writer import TraceWriter, trace_path
 
 from typing import Any, Callable, Optional
 from functools import partial

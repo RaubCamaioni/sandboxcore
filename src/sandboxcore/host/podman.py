@@ -14,13 +14,13 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Optional
 
-from containerwebcore import serializer
-from containerwebcore.contract import RESULT_FILE, TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE
-from containerwebcore.host.config import SandboxConfig
-from containerwebcore.host.rundir import read_run_file
-from containerwebcore.host.trace import read_trace
+from sandboxcore import serializer
+from sandboxcore.contract import RESULT_FILE, TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE
+from sandboxcore.host.config import SandboxConfig
+from sandboxcore.host.rundir import read_run_file
+from sandboxcore.host.trace import read_trace
 
-logger = logging.getLogger("containerwebcore")
+logger = logging.getLogger("sandboxcore")
 
 # (argv..., timeout=None) -> (returncode, stdout, stderr); the podman binary is argv[0]
 Exec = Callable[..., Awaitable[tuple[int, str, str]]]

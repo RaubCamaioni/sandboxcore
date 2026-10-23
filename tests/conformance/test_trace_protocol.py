@@ -2,7 +2,7 @@
 
 import pytest
 
-from containerwebcore.conformance import CHECKS
+from sandboxcore.conformance import CHECKS
 from tests.conformance.runtimes import PYTHON, go_runtime
 
 

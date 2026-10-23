@@ -14,9 +14,9 @@ import os
 import time
 from typing import Callable, Optional
 
-from containerwebcore.contract import TRACE_RECORD as RECORD
+from sandboxcore.contract import TRACE_RECORD as RECORD
 
-logger = logging.getLogger("containerwebcore")
+logger = logging.getLogger("sandboxcore")
 
 READ_CHUNK = 4096
 MAX_EVENTS_PER_SECOND = 60

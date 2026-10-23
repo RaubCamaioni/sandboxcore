@@ -1,4 +1,4 @@
-# containerwebcore design
+# sandboxcore design
 
 ## Why this exists
 
@@ -14,7 +14,7 @@ it by bumping a pinned version.
 ## What is in it
 
 ```
-containerwebcore/
+sandboxcore/
   contract.py      file names and the trace record: what the host and every runtime agree on
   serializer.py    JSON for args.json and result.json (Path values travel as {"__path__": ...})
   host/            the web app's side; language neutral
@@ -28,7 +28,7 @@ containerwebcore/
     annotations.py host side: the entrypoint parameter allow-list, never evaluated
     runner.py      sandbox side: call the entrypoint, write result.json, optional `finish` hook
     tracer.py      sandbox side: sys.monitoring LINE events into a TraceWriter
-runtimes/go/       Go reference (experimental): trace writer, source instrumenter, cwc-go-run
+runtimes/go/       Go reference (experimental): trace writer, source instrumenter, sandboxcore-go-run
 ```
 
 It is all standard library, so the same distribution installs in the app image and in each sandbox
@@ -39,7 +39,7 @@ contracts beyond "a function named like its file" (for example the catalog's `ex
 Another language later is a sibling of `python/` (its annotation rules for the host, and a runtime
 the sandbox image runs) plus a sandbox image; `host/` does not change. The runtime may be written in
 that language. It only has to honour `contract.py` and the line trace protocol
-([trace-protocol.md](trace-protocol.md)), which `containerwebcore.conformance` checks. `runtimes/go`
+([trace-protocol.md](trace-protocol.md)), which `sandboxcore.conformance` checks. `runtimes/go`
 shows the trace for a compiled language: the tool's source is instrumented before it is built.
 
 ## The contract

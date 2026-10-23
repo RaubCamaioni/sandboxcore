@@ -6,7 +6,7 @@ from typing import Literal, get_args, get_origin
 
 import pytest
 
-from containerwebcore.python.annotations import AnnotationError, check_annotation, resolve_annotation
+from sandboxcore.python.annotations import AnnotationError, check_annotation, resolve_annotation
 
 
 def annotation(text: str) -> ast.expr:

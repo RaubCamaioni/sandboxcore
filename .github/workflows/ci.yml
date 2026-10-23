@@ -22,7 +22,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: |
           version=$(grep -m1 '^version' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
-          init=$(grep -m1 '^__version__' src/containerwebcore/__init__.py | sed 's/.*"\(.*\)".*/\1/')
+          init=$(grep -m1 '^__version__' src/sandboxcore/__init__.py | sed 's/.*"\(.*\)".*/\1/')
           if [ "v$version" != "$GITHUB_REF_NAME" ] || [ "$version" != "$init" ]; then
             echo "tag $GITHUB_REF_NAME, pyproject.toml $version and __init__.py $init must agree"
             exit 1
@@ -64,11 +64,11 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Build the reference sandbox image
-        run: podman build -f containers/Containerfile.sandbox -t localhost/containerwebcore-sandbox:test .
+        run: podman build -f containers/Containerfile.sandbox -t localhost/sandboxcore-sandbox:test .
 
       - name: Integration tests
         env:
           SANDBOX_INTEGRATION: "1"
-          SANDBOX_IMAGE: localhost/containerwebcore-sandbox:test
+          SANDBOX_IMAGE: localhost/sandboxcore-sandbox:test
           SANDBOX_TEST_SLACK_SECONDS: "2"
         run: python -m pytest -m integration -v

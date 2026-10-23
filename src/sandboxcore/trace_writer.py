@@ -9,7 +9,7 @@ import os
 import struct
 from typing import Mapping, Optional
 
-from containerwebcore.contract import TRACE_ENV, TRACE_ENV_LEGACY, TRACE_RECORD
+from sandboxcore.contract import TRACE_ENV, TRACE_ENV_LEGACY, TRACE_RECORD
 
 
 def trace_path(env: Mapping[str, str] = os.environ) -> Optional[str]:

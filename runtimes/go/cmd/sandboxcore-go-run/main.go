@@ -1,4 +1,4 @@
-// Command cwc-go-run runs one Go tool file in a run directory, line-traced when the host offers a
+// Command sandboxcore-go-run runs one Go tool file in a run directory, line-traced when the host offers a
 // trace (docs/trace-protocol.md).
 //
 // Experimental: this is the trace half of a Go runtime. The tool is a `package main` file with a
@@ -6,7 +6,7 @@
 // compiled on every run, which counts against the sandbox's time limit: a production runtime would
 // compile at upload.
 //
-//	cwc-go-run --file /runs/x/tool.go --workdir /runs/x --module /opt/containerwebcore/runtimes/go
+//	sandboxcore-go-run --file /runs/x/tool.go --workdir /runs/x --module /opt/sandboxcore/runtimes/go
 package main
 
 import (
@@ -17,16 +17,16 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/RaubCamaioni/containerwebcore/runtimes/go/instrument"
-	"github.com/RaubCamaioni/containerwebcore/runtimes/go/trace"
+	"github.com/RaubCamaioni/sandboxcore/runtimes/go/instrument"
+	"github.com/RaubCamaioni/sandboxcore/runtimes/go/trace"
 )
 
-const modulePath = "github.com/RaubCamaioni/containerwebcore/runtimes/go"
+const modulePath = "github.com/RaubCamaioni/sandboxcore/runtimes/go"
 
 func main() {
 	file := flag.String("file", "", "the tool's Go source (package main)")
 	workdir := flag.String("workdir", "", "the run directory, the tool's working directory")
-	module := flag.String("module", os.Getenv("CWC_GO_MODULE"), "the directory of this module (runtimes/go)")
+	module := flag.String("module", os.Getenv("SANDBOXCORE_GO_MODULE"), "the directory of this module (runtimes/go)")
 	flag.Parse()
 	if *file == "" || *workdir == "" {
 		flag.Usage()
@@ -34,7 +34,7 @@ func main() {
 	}
 	code, err := run(*file, *workdir, *module)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "cwc-go-run:", err)
+		fmt.Fprintln(os.Stderr, "sandboxcore-go-run:", err)
 		os.Exit(1)
 	}
 	os.Exit(code)
@@ -45,11 +45,11 @@ func run(file, workdir, module string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	gomod := "module cwctool\n\ngo 1.22\n"
+	gomod := "module sandboxcoretool\n\ngo 1.22\n"
 	// only a traced run is instrumented; the tool then needs the trace package from this module
 	if trace.Path() != "" {
 		if module == "" {
-			return 0, errors.New("a traced run needs --module or CWC_GO_MODULE")
+			return 0, errors.New("a traced run needs --module or SANDBOXCORE_GO_MODULE")
 		}
 		if src, err = instrument.Source(filepath.Base(file), src); err != nil {
 			return 0, err
@@ -61,7 +61,7 @@ func run(file, workdir, module string) (int, error) {
 		gomod += fmt.Sprintf("\nrequire %s v0.0.0\n\nreplace %s => %s\n", modulePath, modulePath, abs)
 	}
 
-	build, err := os.MkdirTemp("", "cwc-go-")
+	build, err := os.MkdirTemp("", "sandboxcore-go-")
 	if err != nil {
 		return 0, err
 	}

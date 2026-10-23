@@ -4,7 +4,7 @@ import os
 import struct
 import time
 
-from containerwebcore.trace_writer import TraceWriter, trace_path
+from sandboxcore.trace_writer import TraceWriter, trace_path
 
 
 def host_fifo(tmp_path):
@@ -17,9 +17,9 @@ def host_fifo(tmp_path):
 
 
 def test_trace_path_prefers_the_new_variable():
-    assert trace_path({}) is None and trace_path({"CONTAINERWEBCORE_TRACE": ""}) is None
+    assert trace_path({}) is None and trace_path({"SANDBOXCORE_TRACE": ""}) is None
     assert trace_path({"PYWEBTOOLS_TRACE": "/old"}) == "/old"
-    assert trace_path({"PYWEBTOOLS_TRACE": "/old", "CONTAINERWEBCORE_TRACE": "/new"}) == "/new"
+    assert trace_path({"PYWEBTOOLS_TRACE": "/old", "SANDBOXCORE_TRACE": "/new"}) == "/new"
 
 
 def test_records_are_little_endian_uint32(tmp_path):

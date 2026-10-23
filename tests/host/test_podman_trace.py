@@ -2,7 +2,7 @@ import os
 import stat
 import struct
 
-from containerwebcore.host.podman import Outcome
+from sandboxcore.host.podman import Outcome
 
 from tests.host.test_podman_run import FakePodman, cfg, ready_runner
 
@@ -19,7 +19,7 @@ async def test_run_creates_fifo_and_passes_trace(tmp_path):
     tool = tool_and_result(tmp_path)
     fake = FakePodman(OK)
     await ready_runner(cfg(), fake).run(tool, tmp_path, on_line=lambda n: None)
-    assert f"CONTAINERWEBCORE_TRACE={tmp_path / 'trace'}" in fake.calls[0]
+    assert f"SANDBOXCORE_TRACE={tmp_path / 'trace'}" in fake.calls[0]
     assert f"PYWEBTOOLS_TRACE={tmp_path / 'trace'}" in fake.calls[0]
     assert stat.S_ISFIFO(os.stat(tmp_path / "trace").st_mode)
 

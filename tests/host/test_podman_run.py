@@ -4,8 +4,8 @@ import sys
 
 import pytest
 
-from containerwebcore.host.podman import Outcome, PodmanRunner, SandboxBusy, SandboxUnavailable
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore.host.podman import Outcome, PodmanRunner, SandboxBusy, SandboxUnavailable
+from sandboxcore.host.config import SandboxConfig
 from tests import IMAGE
 
 
@@ -98,7 +98,7 @@ async def test_run_survives_kill_failure(tmp_path):
 
 
 async def test_run_podman_bounds_captured_output():
-    from containerwebcore.host.podman import OUTPUT_CAP_BYTES, run_podman
+    from sandboxcore.host.podman import OUTPUT_CAP_BYTES, run_podman
 
     code = "import sys; sys.stdout.write('x' * 3_000_000); sys.stderr.write('y' * 3_000_000)"
     rc, out, err = await run_podman(sys.executable, "-c", code)

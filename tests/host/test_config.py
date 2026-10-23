@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from containerwebcore.host.config import SandboxConfig
+from sandboxcore.host.config import SandboxConfig
 from tests import IMAGE
 
 
@@ -11,7 +11,7 @@ def test_defaults_from_empty_environment():
     assert cfg.image == IMAGE
     assert (cfg.max_concurrent, cfg.queue_seconds, cfg.timeout_seconds) == (2, 10.0, 10.0)
     assert (cfg.memory, cfg.cpus, cfg.pids) == ("1g", "0.5", 64)
-    assert cfg.run_dir == Path("/tmp/containerwebcore-runs")
+    assert cfg.run_dir == Path("/tmp/sandboxcore-runs")
     assert cfg.max_output_mb == 64
     assert cfg.sandbox_uid == 1001
 

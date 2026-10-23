@@ -3,8 +3,8 @@ import os
 import struct
 import textwrap
 
-from containerwebcore.python.tracer import LineTracer
-from containerwebcore.trace_writer import TraceWriter
+from sandboxcore.python.tracer import LineTracer
+from sandboxcore.trace_writer import TraceWriter
 
 
 def run_tool(tmp_path, code, fd):
