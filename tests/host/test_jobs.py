@@ -163,4 +163,4 @@ async def test_inspect_then_bind_then_run(sandbox):
     signature = await sandbox.inspect(source)
     arguments, files = signature.bind({"a": "2"})
     r = await sandbox.run(Job(source, arguments, files))
-    assert r.value == 2.5
+    assert r.value == 2.5  # b came from the tool's own default

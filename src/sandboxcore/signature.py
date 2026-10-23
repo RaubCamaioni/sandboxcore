@@ -61,19 +61,20 @@ class Signature:
 
     def bind(self, values: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
         """(arguments, files) for a Job from submitted `values`: strings, or file uploads (anything with
-        `filename` and `data`, such as an InputFile). A missing value takes the parameter's default.
-        Values for names the signature does not have are ignored. SignatureError for a bad value."""
+        `filename` and `data`, such as an InputFile). A parameter without a value is left out, so the
+        tool's own default applies (the stored default is display text, never converted). Values for
+        names the signature does not have are ignored. SignatureError for a bad value."""
         arguments: dict[str, Any] = {}
         files: dict[str, Any] = {}
         for p in self.parameters:
             value = values.get(p.name)
+            if value is None:
+                continue
             if p.kind == "file":
                 files[p.name] = value if _is_upload(value) else None
                 continue
-            if value is None or _is_upload(value):
-                value = p.default
-            if value is None:
-                raise SignatureError(f"Argument Error: {p.name} is required")
+            if _is_upload(value):
+                raise SignatureError(f"Argument Error: {p.name} takes a value, not a file")
             if not isinstance(value, str):
                 value = str(value)
             if len(value) > MAX_VALUE:

@@ -69,18 +69,23 @@ SIG = from_report(
 def test_values_are_converted_by_kind():
     upload = InputFile("a.png", b"x")
     arguments, files = SIG.bind({"n": " 12 ", "x": "2.5", "mode": "3", "data": upload, "stray": "ignored"})
-    assert arguments == {"text": "hi", "n": 12, "x": 2.5, "mode": 3}
+    assert arguments == {"n": 12, "x": 2.5, "mode": 3}  # text was not submitted: the tool's default applies
     assert files == {"data": upload}
 
 
-def test_a_missing_file_is_none_and_defaults_fill_in():
-    arguments, files = SIG.bind({"n": "1"})
-    assert arguments["mode"] == "png" and arguments["x"] == 0.5 and files == {"data": None}
+def test_missing_values_are_left_to_the_tools_own_defaults():
+    assert SIG.bind({"n": "1"}) == ({"n": 1}, {})
+    assert SIG.bind({"data": "not a file"}) == ({}, {"data": None})
+
+
+def test_a_file_for_a_value_parameter_is_refused():
+    with pytest.raises(SignatureError, match="not a file"):
+        SIG.bind({"n": InputFile("x", b"1")})
 
 
 @pytest.mark.parametrize(
     "values",
-    [{}, {"n": "1.5"}, {"n": "1", "x": "nan"}, {"n": "1", "x": "inf"}, {"n": "1", "mode": "gif"}, {"n": "9" * 5000}],
+    [{"n": "1.5"}, {"n": "1", "x": "nan"}, {"n": "1", "x": "inf"}, {"n": "1", "mode": "gif"}, {"n": "9" * 5000}],
 )
 def test_bad_values_are_refused(values):
     with pytest.raises(SignatureError):
