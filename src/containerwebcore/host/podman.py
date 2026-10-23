@@ -1,13 +1,12 @@
 """Run uploaded tools in per-run rootless podman containers.
 
-Design: docs/superpowers/specs/2026-10-19-podman-sandbox-runner-design.md
+Design: docs/design.md; history in docs/history/2026-10-19-podman-sandbox-runner-design.md
 """
 
 import asyncio
 import logging
 import os
 import shutil
-import stat
 import time
 from contextlib import suppress
 from dataclasses import dataclass
@@ -16,10 +15,12 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Optional
 
 from containerwebcore import serializer
+from containerwebcore.contract import RESULT_FILE, TRACE_ENV, TRACE_FILE
 from containerwebcore.host.config import SandboxConfig
+from containerwebcore.host.rundir import make_run_dir, read_run_file
 from containerwebcore.host.trace import read_trace
 
-logger = logging.getLogger("uvicorn.error")
+logger = logging.getLogger("containerwebcore")
 
 # (argv..., timeout=None) -> (returncode, stdout, stderr); the podman binary is argv[0]
 Exec = Callable[..., Awaitable[tuple[int, str, str]]]
@@ -48,11 +49,6 @@ KILLED_EXIT_CODES = (137, 143)
 # how podman reports a container killed by its own --timeout: `podman run` exits 255, inspect shows -1
 TIMEOUT_RUN_EXIT_CODE = 255
 TIMEOUT_INSPECT_EXIT_CODE = -1
-# uid of the `app` user created in containers/Containerfile.sandbox
-SANDBOX_UID = 1001
-# the FIFO in the run directory that carries the sandbox's executed line numbers
-TRACE_NAME = "trace"
-TRACE_ENV = "PYWEBTOOLS_TRACE"
 TRACE_DRAIN_SECONDS = 1.0
 STARTING = "starting"
 
@@ -77,9 +73,7 @@ async def _read_tail(stream: asyncio.StreamReader) -> bytes:
 
 
 async def run_podman(*argv: str, timeout: Optional[float] = None) -> tuple[int, str, str]:
-    proc = await asyncio.create_subprocess_exec(
-        *argv, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
-    )
+    proc = await asyncio.create_subprocess_exec(*argv, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
 
     async def finish():
         out, err = await asyncio.gather(_read_tail(proc.stdout), _read_tail(proc.stderr))
@@ -256,6 +250,16 @@ class PodmanRunner:
             except Exception as e:
                 logger.warning(f"sandbox image refresh raised: {e}")
 
+    # --- run directories ------------------------------------------------------------
+
+    def make_run_dir(self) -> Path:
+        """A fresh, secret, world-writable run directory under the configured root."""
+        return make_run_dir(self.config.run_dir)
+
+    def new_run_dir(self) -> Path:
+        """The run directory for a request."""
+        return self.make_run_dir()
+
     # --- one run -----------------------------------------------------------------
 
     @staticmethod
@@ -270,7 +274,7 @@ class PodmanRunner:
             "--uts=host",
             # the image's unprivileged user; maps to a sub-UID of the inner podman user, never to the app user.
             # (--userns=auto would force a re-owned copy of the 2.6 GB image per mapping on fuse-overlayfs)
-            f"--user={SANDBOX_UID}",
+            f"--user={cfg.sandbox_uid}",
             f"--cpus={cfg.cpus}",
             f"--memory={cfg.memory}",
             f"--memory-swap={cfg.memory}",
@@ -398,16 +402,22 @@ class PodmanRunner:
 
         if _dir_size(run_dir) > cfg.max_output_mb * 1024 * 1024:
             _empty_dir(run_dir)
-            return RunResult(Outcome.CRASHED, message=f"Tool output exceeded the {cfg.max_output_mb} MB limit", stderr_tail=tail)
+            return RunResult(
+                Outcome.CRASHED, message=f"Tool output exceeded the {cfg.max_output_mb} MB limit", stderr_tail=tail
+            )
 
-        results = _read_results(run_dir / "result.json")
+        results = _read_results(run_dir / RESULT_FILE)
         if results is not _INVALID and results is not None:
             return RunResult(Outcome.OK, results=results[0], stderr_tail=tail)
 
         if oom_killed:
-            return RunResult(Outcome.OOM, message=f"Tool exceeded the {cfg.memory_label} memory limit", stderr_tail=tail)
+            return RunResult(
+                Outcome.OOM, message=f"Tool exceeded the {cfg.memory_label} memory limit", stderr_tail=tail
+            )
         if timed_out or exit_code == TIMEOUT_INSPECT_EXIT_CODE or elapsed >= cfg.timeout_seconds - TIMEOUT_TOLERANCE:
-            return RunResult(Outcome.TIMEOUT, message=f"Tool exceeded the {cfg.timeout_seconds:g} second limit", stderr_tail=tail)
+            return RunResult(
+                Outcome.TIMEOUT, message=f"Tool exceeded the {cfg.timeout_seconds:g} second limit", stderr_tail=tail
+            )
         return RunResult(Outcome.CRASHED, message="Tool failed to run", stderr_tail=tail)
 
 
@@ -431,7 +441,7 @@ class _Trace:
 
 def _open_trace(run_dir: Path) -> Optional[_Trace]:
     """Create the trace FIFO and hold both ends open; None (run without a trace) on any failure."""
-    path = run_dir / TRACE_NAME
+    path = run_dir / TRACE_FILE
     rfd = None
     try:
         os.mkfifo(path, 0o666)
@@ -455,23 +465,14 @@ def _line_count(tool: Path) -> int:
 
 def _read_results(path: Path):
     """None when absent, _INVALID when present but untrusted, else a 1-tuple with the value."""
-    try:
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
-    except FileNotFoundError:
+    if not os.path.lexists(path):
         return None
-    except OSError as e:  # symlink (ELOOP), permissions, ...
-        logger.warning(f"result.json rejected: {e}")
-        return _INVALID
     try:
-        st = os.fstat(fd)
-        if not stat.S_ISREG(st.st_mode) or st.st_size > RESULT_MAX_BYTES:
-            logger.warning("result.json rejected: not a regular file or too large")
-            os.close(fd)
-            return _INVALID
-        with os.fdopen(fd, "r") as f:
-            return (serializer.load(f),)
-    except (OSError, ValueError) as e:
-        logger.warning(f"result.json rejected: {e}")
+        # never a plain open(): a symlink would read any host file, and a FIFO would block the event
+        # loop forever because the container that could write to it is already gone
+        return (serializer.loads(read_run_file(path, RESULT_MAX_BYTES).decode("utf-8")),)
+    except (ValueError, RecursionError) as e:  # RunFileError, bad UTF-8 or JSON, absurd nesting
+        logger.warning(f"{path.name} rejected: {e}")
         return _INVALID
 
 

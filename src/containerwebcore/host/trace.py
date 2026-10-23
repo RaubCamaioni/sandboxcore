@@ -1,6 +1,6 @@
 """Execution trace: line numbers streamed out of the sandbox to the tool page.
 
-Design: docs/superpowers/specs/2026-10-19-execution-trace-design.md
+Design: docs/design.md; history in docs/history/2026-10-19-execution-trace-design.md
 
 The sandbox writes 4-byte little-endian line numbers to a FIFO in its run directory.
 `read_trace` validates them against the tool's line count and forwards at most
@@ -11,13 +11,13 @@ hand them to the page's server-sent-events stream under a per-run token.
 import asyncio
 import logging
 import os
-import struct
 import time
 from typing import Callable, Optional
 
-logger = logging.getLogger("uvicorn.error")
+from containerwebcore.contract import TRACE_RECORD as RECORD
 
-RECORD = struct.Struct("<I")
+logger = logging.getLogger("containerwebcore")
+
 READ_CHUNK = 4096
 MAX_EVENTS_PER_SECOND = 60
 QUEUE_SIZE = 1000

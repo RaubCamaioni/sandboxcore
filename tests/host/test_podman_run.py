@@ -6,6 +6,7 @@ import pytest
 
 from containerwebcore.host.podman import Outcome, PodmanRunner, SandboxBusy, SandboxUnavailable
 from containerwebcore.host.config import SandboxConfig
+from tests import IMAGE
 
 
 class FakePodman:
@@ -34,7 +35,7 @@ class FakePodman:
 
 
 def cfg(**kw):
-    return SandboxConfig.from_environment({k: str(v) for k, v in kw.items()})
+    return SandboxConfig.from_environment({k: str(v) for k, v in kw.items()}, image=IMAGE)
 
 
 def ready_runner(config, exec):

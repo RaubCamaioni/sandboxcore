@@ -1,7 +1,16 @@
+"""Run one Python tool inside the sandbox: call its entrypoint with args.json, write result.json.
+
+The entrypoint is the function named like the file (`lower.py` -> `lower`). An app whose results need
+work in the sandbox after the call (the CadQuery catalogue turns a model into STL/STEP files) passes a
+`finish` callable to `main`; whatever it returns becomes the result, and an exception it raises
+becomes an error string labelled `finish_label`.
+"""
+
 from containerwebcore import serializer
+from containerwebcore.contract import ARGS_FILE, RESULT_FILE, TRACE_ENV
 from containerwebcore.python.tracer import LineTracer, open_trace
 
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from functools import partial
 from pathlib import Path
 import importlib.util
@@ -9,8 +18,16 @@ import traceback
 import sys
 import os
 
+Finish = Callable[[Any], Any]
 
-def runner(file: Path, workdir: Path, trace: str | None = None) -> Any:
+
+def runner(
+    file: Path,
+    workdir: Path,
+    trace: str | None = None,
+    finish: Optional[Finish] = None,
+    finish_label: str = "Finish Error",
+) -> Any:
     os.chdir(workdir)
 
     # optional line trace: 4-byte line numbers of the tool file to a FIFO the host reads
@@ -21,16 +38,16 @@ def runner(file: Path, workdir: Path, trace: str | None = None) -> Any:
             tracer = LineTracer(file, fd)
             tracer.start()
     try:
-        _run(file)
+        _run(file, finish, finish_label)
     finally:
         if tracer is not None:
             tracer.stop()
             os.close(tracer.fd)
 
 
-def _run(file: Path) -> None:
+def _run(file: Path, finish: Optional[Finish], finish_label: str) -> None:
 
-    with open("args.json", "r") as f:
+    with open(ARGS_FILE, "r") as f:
         args = serializer.load(f)
 
     module_name = file.stem
@@ -43,9 +60,11 @@ def _run(file: Path) -> None:
 
     func: Callable[[Any], Any] = getattr(module, module_name, None)
 
+    failed = False
     try:
         results = partial(func, **args)()
     except Exception as e:
+        failed = True
         _, _, exc_traceback = sys.exc_info()
         frames = traceback.extract_tb(exc_traceback)
 
@@ -57,24 +76,33 @@ def _run(file: Path) -> None:
 
         print(results)
 
-    with open("result.json", "w") as f:
+    # the app's own step on a successful result (e.g. exporting a CAD model to files); a tool error
+    # string is reported as it is
+    if finish is not None and not failed:
+        try:
+            results = finish(results)
+        except Exception as e:
+            results = f"{finish_label}: {type(e).__name__}: {e}"
+            print(results)
+
+    with open(RESULT_FILE, "w") as f:
         serializer.dump(results, f)
 
 
-def main():
+def main(argv: Optional[list[str]] = None, finish: Optional[Finish] = None, finish_label: str = "Finish Error"):
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", "-f", type=str, required=True)
     parser.add_argument("--workdir", "-w", type=str, required=True)
     # the host passes the trace FIFO in the environment; the flag exists for local use
-    parser.add_argument("--trace", "-t", type=str, default=os.environ.get("PYWEBTOOLS_TRACE"))
-    args = parser.parse_args()
+    parser.add_argument("--trace", "-t", type=str, default=os.environ.get(TRACE_ENV))
+    args = parser.parse_args(argv)
 
     file = Path(args.file)
     workdir = Path(args.workdir)
 
-    runner(file, workdir, args.trace)
+    runner(file, workdir, args.trace, finish, finish_label)
 
 
 if __name__ == "__main__":

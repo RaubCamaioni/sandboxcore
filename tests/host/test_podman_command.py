@@ -2,8 +2,9 @@ from pathlib import Path
 
 from containerwebcore.host.podman import PodmanRunner
 from containerwebcore.host.config import SandboxConfig
+from tests import IMAGE
 
-CFG = SandboxConfig.from_environment({})
+CFG = SandboxConfig.from_environment({}, image=IMAGE)
 
 
 def test_command_matches_spec_flags():

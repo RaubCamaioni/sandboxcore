@@ -1,15 +1,16 @@
 """Line trace: write the executed line numbers of the tool file as 4-byte records.
 
 Only code objects whose filename is the tool file are traced, so library code
-(numpy, cadquery, ...) is never reported. Every record is ``struct.pack("<I", line)``
+(numpy, cadquery, ...) is never reported. Every record is ``contract.TRACE_RECORD``
 written non-blocking; a full pipe or a missing reader drops records silently so the
 trace can never slow down or fail the tool.
 """
 
 import os
-import struct
 import sys
 from pathlib import Path
+
+from containerwebcore.contract import TRACE_RECORD
 
 TOOL_ID = sys.monitoring.PROFILER_ID
 
@@ -31,7 +32,7 @@ class LineTracer:
         if code.co_filename != self.filename:
             return sys.monitoring.DISABLE  # never called again for this code object
         try:
-            os.write(self.fd, struct.pack("<I", line))
+            os.write(self.fd, TRACE_RECORD.pack(line))
         except (BlockingIOError, BrokenPipeError, OSError):
             pass
 

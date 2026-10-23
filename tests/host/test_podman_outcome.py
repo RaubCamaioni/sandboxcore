@@ -2,8 +2,9 @@ import json
 
 from containerwebcore.host.podman import Outcome, PodmanRunner
 from containerwebcore.host.config import SandboxConfig
+from tests import IMAGE
 
-CFG = SandboxConfig.from_environment({})
+CFG = SandboxConfig.from_environment({}, image=IMAGE)
 
 
 def classify(tmp_path, **kw):
@@ -60,6 +61,29 @@ def test_result_json_symlink_is_crashed(tmp_path):
     assert classify(tmp_path).outcome is Outcome.CRASHED
 
 
+def test_result_json_fifo_is_crashed_without_blocking(tmp_path):
+    # the container is gone, so nothing will ever open the write end: a blocking open would hang the app
+    import os
+    import threading
+
+    os.mkfifo(tmp_path / "result.json")
+    got = []
+    worker = threading.Thread(target=lambda: got.append(classify(tmp_path)), daemon=True)
+    worker.start()
+    worker.join(5)
+    assert got and got[0].outcome is Outcome.CRASHED
+
+
+def test_result_json_nested_too_deep_is_crashed(tmp_path):
+    (tmp_path / "result.json").write_text("[" * 100_000 + "]" * 100_000)
+    assert classify(tmp_path).outcome is Outcome.CRASHED
+
+
+def test_result_json_invalid_utf8_is_crashed(tmp_path):
+    (tmp_path / "result.json").write_bytes(bytes([34, 255, 34]))  # a JSON string holding byte 0xff
+    assert classify(tmp_path).outcome is Outcome.CRASHED
+
+
 def test_result_json_oversized_is_crashed(tmp_path):
     from containerwebcore.host.podman import RESULT_MAX_BYTES
 
@@ -68,7 +92,7 @@ def test_result_json_oversized_is_crashed(tmp_path):
 
 
 def test_oversized_output_directory_is_crashed_and_emptied(tmp_path):
-    small = SandboxConfig.from_environment({"SANDBOX_MAX_OUTPUT_MB": "1"})
+    small = SandboxConfig.from_environment({"SANDBOX_MAX_OUTPUT_MB": "1"}, image=IMAGE)
     (tmp_path / "result.json").write_text(json.dumps("ok"))
     (tmp_path / "big.bin").write_bytes(b"\0" * (2 * 1024 * 1024))
     r = PodmanRunner(small).classify(tmp_path, exit_code=0, oom_killed=False, elapsed=0.5, stderr="")

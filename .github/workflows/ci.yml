@@ -1,0 +1,65 @@
+name: Test
+
+# Unit tests on every push and pull request. A `v<semver>` tag must match pyproject.toml: apps pin
+# these tags, so a mismatched one would install a different version than its name says.
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the release tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(grep -m1 '^version' pyproject.toml | sed 's/.*"\(.*\)".*/\1/')
+          init=$(grep -m1 '^__version__' src/containerwebcore/__init__.py | sed 's/.*"\(.*\)".*/\1/')
+          if [ "v$version" != "$GITHUB_REF_NAME" ] || [ "$version" != "$init" ]; then
+            echo "tag $GITHUB_REF_NAME, pyproject.toml $version and __init__.py $init must agree"
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Unit tests
+        run: python -m pytest -q
+
+  integration:
+    # GitHub's runners have rootless podman with cgroup v2; the self-test proves the limits are enforced.
+    # Not yet required: whether the runner delegates the cpu controller (`--cpus`) is unproven until the
+    # first run here. Drop continue-on-error once it has passed.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Build the reference sandbox image
+        run: podman build -f containers/Containerfile.sandbox -t localhost/containerwebcore-sandbox:test .
+
+      - name: Integration tests
+        env:
+          SANDBOX_INTEGRATION: "1"
+          SANDBOX_IMAGE: localhost/containerwebcore-sandbox:test
+          SANDBOX_TEST_SLACK_SECONDS: "2"
+        run: python -m pytest -m integration -v

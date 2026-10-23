@@ -11,7 +11,7 @@ import pytest
 from containerwebcore.host.podman import Outcome, PodmanRunner
 from containerwebcore.host.config import SandboxConfig
 
-from tests.integration.test_sandbox import config, make_run, runner  # noqa: F401  (fixtures)
+from tests.integration.test_sandbox import SLACK, config, make_run, runner  # noqa: F401  (fixtures)
 
 pytestmark = [
     pytest.mark.integration,
@@ -73,5 +73,5 @@ async def test_flooding_tool_is_rate_limited_and_times_out(make_run):
     finally:
         await r.stop()
     assert result.outcome is Outcome.TIMEOUT, result
-    assert elapsed < short.timeout_seconds + 3
+    assert elapsed < short.timeout_seconds + 3 + SLACK
     assert seen and len(seen) / elapsed <= 60

@@ -1,8 +1,9 @@
 """Integration tests for the sandbox runner.
 
-They need the inner podman and the sandbox image, so they run inside the app container:
+They need a real podman and a sandbox image, so they run on a Linux podman host (run-integration.sh)
+or inside an app container:
 
-    SANDBOX_INTEGRATION=1 python -m pytest -m integration tests/test_integration_sandbox.py -v
+    SANDBOX_INTEGRATION=1 SANDBOX_IMAGE=<image> python -m pytest -m integration tests/integration -v
 """
 
 import asyncio
@@ -17,6 +18,9 @@ import pytest
 from containerwebcore import serializer
 from containerwebcore.host.podman import Outcome, PodmanRunner
 from containerwebcore.host.config import SandboxConfig
+
+# extra seconds a slow podman host (WSL: ~0.5 s per podman call) may take beyond the production bounds
+SLACK = float(os.environ.get("SANDBOX_TEST_SLACK_SECONDS", "0"))
 
 pytestmark = [
     pytest.mark.integration,
@@ -40,7 +44,7 @@ async def runner(config):
 
 @pytest.fixture
 def make_run(config):
-    """Create a run directory the way routes/tools.py does; clean up afterwards."""
+    """Create a run directory the way an app does; clean up afterwards."""
     created = []
 
     def _make(name, code, args=None):
@@ -107,7 +111,7 @@ async def test_infinite_loop_reports_timeout(runner, make_run, config):
     started = time.monotonic()
     r = await runner.run(tool, run_dir)
     assert r.outcome is Outcome.TIMEOUT and r.message == f"Tool exceeded the {config.timeout_seconds:g} second limit"
-    assert time.monotonic() - started < config.timeout_seconds + 2.5
+    assert time.monotonic() - started < config.timeout_seconds + 2.5 + SLACK
 
 
 async def test_fork_bomb_hits_pids_limit(runner, make_run):
