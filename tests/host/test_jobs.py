@@ -1,47 +1,19 @@
 """Sandbox: stage a job, run it, and return only files the core has checked.
 
-`LocalRunner` stands in for podman: it runs the real Python runtime in a subprocess and classifies the
-run with PodmanRunner.classify, so staging, the runtime and the vetting are all real.
+`UnsandboxedRunner` (sandboxcore.testing) stands in for podman: it runs the real Python runtime in a
+subprocess and classifies the run with PodmanRunner.classify, so staging, the runtime and vetting are real.
 """
 
 import asyncio
-import sys
-from pathlib import Path
 
 import pytest
 
-from sandboxcore.host import InputFile, Job, JobError, Outcome, OutputFile, PodmanRunner, Sandbox, SandboxConfig
+from sandboxcore.host import InputFile, Job, JobError, Outcome, OutputFile, Sandbox, SandboxConfig
 from sandboxcore.host.podman import SandboxUnavailable
 from sandboxcore.signature import SignatureError
 from sandboxcore.source import Source, SourceError
+from sandboxcore.testing import UnsandboxedRunner
 from tests import IMAGE
-
-
-class LocalRunner:
-    available = True
-    unavailable_reason = None
-
-    def __init__(self, config):
-        self.classifier = PodmanRunner(config)
-        self.calls = []
-
-    def start_in_background(self):
-        pass
-
-    async def start(self):
-        pass
-
-    async def stop(self):
-        pass
-
-    async def run(self, tool, run_dir, on_line=None, runtime_args=()):
-        self.calls.append((tool, run_dir))
-        proc = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "sandboxcore.python.runner", "--file", str(tool), "--workdir", str(run_dir),
-            *runtime_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        )
-        _, err = await proc.communicate()
-        return self.classifier.classify(run_dir, proc.returncode, False, 0.1, err.decode())
 
 
 @pytest.fixture
@@ -51,7 +23,7 @@ def config(tmp_path):
 
 @pytest.fixture
 async def sandbox(config):
-    s = Sandbox(config, runner=LocalRunner(config))
+    s = Sandbox(config, runner=UnsandboxedRunner(config))
     yield s
     await s.stop()
 
@@ -151,7 +123,7 @@ async def test_a_failed_run_still_has_its_id_and_message(sandbox):
 
 async def test_runs_are_removed_after_keep_seconds_and_on_stop(config):
     code = "from pathlib import Path\ndef t():\n    Path('o.txt').write_text('o')\n"
-    s = Sandbox(config, runner=LocalRunner(config), keep_seconds=0)
+    s = Sandbox(config, runner=UnsandboxedRunner(config), keep_seconds=0)
     r = await s.run(job(code))
     await asyncio.sleep(0.05)
     assert s.output(r.run, "o.txt") is None and not (config.run_dir / r.run).exists()
@@ -163,7 +135,7 @@ async def test_runs_are_removed_after_keep_seconds_and_on_stop(config):
 
 
 async def test_an_unavailable_sandbox_refuses_before_staging(config):
-    runner = LocalRunner(config)
+    runner = UnsandboxedRunner(config)
     runner.available, runner.unavailable_reason = False, "self-test failed"
     s = Sandbox(config, runner=runner)
     with pytest.raises(SandboxUnavailable):
