@@ -17,7 +17,7 @@ from typing import Any, Awaitable, Callable, Optional
 from containerwebcore import serializer
 from containerwebcore.contract import RESULT_FILE, TRACE_ENV, TRACE_FILE
 from containerwebcore.host.config import SandboxConfig
-from containerwebcore.host.rundir import make_run_dir, read_run_file
+from containerwebcore.host.rundir import read_run_file
 from containerwebcore.host.trace import read_trace
 
 logger = logging.getLogger("containerwebcore")
@@ -249,16 +249,6 @@ class PodmanRunner:
                     logger.warning(f"sandbox image refresh failed: {err.strip()}")
             except Exception as e:
                 logger.warning(f"sandbox image refresh raised: {e}")
-
-    # --- run directories ------------------------------------------------------------
-
-    def make_run_dir(self) -> Path:
-        """A fresh, secret, world-writable run directory under the configured root."""
-        return make_run_dir(self.config.run_dir)
-
-    def new_run_dir(self) -> Path:
-        """The run directory for a request."""
-        return self.make_run_dir()
 
     # --- one run -----------------------------------------------------------------
 

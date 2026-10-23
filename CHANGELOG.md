@@ -16,9 +16,9 @@ Changes from the copies in the apps:
   run directory. With no image from either the environment or the app, it raises instead of falling back
   to PyTools' image. The default run directory is `/tmp/containerwebcore-runs`.
 - `SandboxConfig.sandbox_uid` (default 1001) replaces the `SANDBOX_UID` constant.
-- Run-directory helpers shared by both apps: `make_run_dir` (and `PodmanRunner.make_run_dir`/`new_run_dir`
-  from the catalog), `delete_later`, `upload_path`, `resolve_run_file`, `read_run_file` (the catalog's
-  `read_build_file`).
+- Run-directory helpers shared by both apps: `make_run_dir` (replaces the catalog's `PodmanRunner.new_run_dir`,
+  a leftover of its warm pool), `delete_later`, `upload_path`, `resolve_run_file`, `read_run_file` (the
+  catalog's `read_build_file`).
 - The Python runner takes an optional `finish` hook and `finish_label` (the catalog's export step), and
   `main(argv)` accepts arguments for in-process use.
 - File names and the trace record live in `containerwebcore.contract`; host and runtime no longer

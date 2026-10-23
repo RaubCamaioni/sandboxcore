@@ -5,6 +5,7 @@ from containerwebcore.host.podman import Outcome, PodmanRunner, RunResult, Sandb
 from containerwebcore.host.rundir import (
     RunFileError,
     delete_later,
+    make_run_dir,
     read_run_file,
     resolve_run_file,
     upload_path,
@@ -22,6 +23,7 @@ __all__ = [
     "TraceChannel",
     "TraceRegistry",
     "delete_later",
+    "make_run_dir",
     "read_run_file",
     "resolve_run_file",
     "upload_path",

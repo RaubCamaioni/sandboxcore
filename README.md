@@ -33,7 +33,7 @@ dependencies = [
 ```python
 import os
 from containerwebcore.host import PodmanRunner, SandboxConfig, Outcome, SandboxBusy, SandboxUnavailable
-from containerwebcore.host import TraceRegistry, delete_later, upload_path, resolve_run_file, RunFileError
+from containerwebcore.host import TraceRegistry, make_run_dir, delete_later, upload_path, resolve_run_file, RunFileError
 from containerwebcore.python.annotations import check_annotation, resolve_annotation, AnnotationError
 from containerwebcore import serializer
 
@@ -43,7 +43,7 @@ config = SandboxConfig.from_environment(
 runner = PodmanRunner(config)
 runner.start_in_background()          # on app startup; runner.stop() on shutdown
 
-run_dir = runner.make_run_dir()       # schedule asyncio.create_task(delete_later(run_dir)) when done
+run_dir = make_run_dir(config.run_dir)  # then asyncio.create_task(delete_later(run_dir)) when done
 (run_dir / "tool.py").write_text(code)
 with open(run_dir / "args.json", "w") as f:
     serializer.dump(kwargs, f)        # uploads: write them to upload_path(run_dir, key, filename)
