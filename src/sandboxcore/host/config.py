@@ -20,6 +20,7 @@ class SandboxConfig:
     pids: int
     run_dir: Path
     max_output_mb: int = 64  # run directory size after a run; larger output is discarded
+    max_input_mb: int = 64  # uploaded files of one job, together
     sandbox_uid: int = DEFAULT_SANDBOX_UID
 
     @classmethod
@@ -45,6 +46,7 @@ class SandboxConfig:
             pids=int(env.get("SANDBOX_PIDS", "64")),
             run_dir=Path(env.get("SANDBOX_RUN_DIR", run_dir)),
             max_output_mb=int(env.get("SANDBOX_MAX_OUTPUT_MB", "64")),
+            max_input_mb=int(env.get("SANDBOX_MAX_INPUT_MB", "64")),
         )
 
     @property

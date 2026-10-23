@@ -2,7 +2,7 @@
 
 Everything in a run directory after a run was written by untrusted code. It can be a symlink to any
 host path, a FIFO that blocks whoever opens it, or a file of any size, and result.json can name any
-host path. The helpers here are the only ways the app should read or serve from a run directory.
+host path. The helpers here are the only ways to read from a run directory (Sandbox uses them).
 """
 
 import asyncio
@@ -68,19 +68,6 @@ def upload_path(run_dir: Path, key: str, filename: Optional[str]) -> Path:
     path = directory / name
     if path.resolve().parent != directory.resolve():
         raise RunFileError("Bad upload filename")
-    return path
-
-
-def resolve_run_file(run_root: Path, requested: str) -> Path:
-    """The real path of a download request, which must lie inside a run directory under `run_root`.
-
-    Symlinks are resolved first, so a link the tool left behind cannot point outside. The result may
-    not exist (the run expired) or may not be a regular file: check `is_file()` before serving it.
-    """
-    path = (Path("/") / requested).resolve()
-    root = run_root.resolve()
-    if not path.is_relative_to(root) or path == root or path.parent == root:
-        raise RunFileError("Forbidden File Access")
     return path
 
 

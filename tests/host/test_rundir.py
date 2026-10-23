@@ -13,7 +13,6 @@ from sandboxcore.host.rundir import (
     delete_later,
     make_run_dir,
     read_run_file,
-    resolve_run_file,
     upload_path,
 )
 
@@ -67,29 +66,6 @@ def test_an_upload_name_taken_by_a_symlink_is_refused(tmp_path):
     (tmp_path / "inputs" / "data" / "x.txt").symlink_to(tmp_path / "elsewhere.txt")
     with pytest.raises(RunFileError):
         upload_path(tmp_path, "data", "x.txt")
-
-
-def test_a_download_inside_a_run_dir_resolves(tmp_path):
-    run_dir = make_run_dir(tmp_path)
-    (run_dir / "out.txt").write_text("x")
-    assert resolve_run_file(tmp_path, str(run_dir / "out.txt").lstrip("/")) == (run_dir / "out.txt").resolve()
-
-
-@pytest.mark.parametrize("requested", ["etc/passwd", "", "..", "{root}/../x", "{root}", "{run}"])
-def test_a_download_outside_a_run_dir_is_refused(tmp_path, requested):
-    run_dir = make_run_dir(tmp_path)
-    requested = requested.format(root=str(tmp_path).lstrip("/"), run=str(run_dir).lstrip("/"))
-    with pytest.raises(RunFileError):
-        resolve_run_file(tmp_path, requested)
-
-
-def test_a_download_through_a_symlink_out_of_the_run_dir_is_refused(tmp_path):
-    root = tmp_path / "runs"
-    run_dir = make_run_dir(root)
-    (tmp_path / "secret").write_text("SESSION_KEY=hunter2")
-    (run_dir / "link").symlink_to(tmp_path / "secret")
-    with pytest.raises(RunFileError):
-        resolve_run_file(root, str(run_dir / "link").lstrip("/"))
 
 
 def test_read_run_file_reads_a_plain_file(tmp_path):
