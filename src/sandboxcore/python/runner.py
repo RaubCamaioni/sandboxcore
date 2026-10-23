@@ -8,6 +8,7 @@ becomes an error string labelled `finish_label`.
 
 from sandboxcore import serializer
 from sandboxcore.contract import ARGS_FILE, RESULT_FILE
+from sandboxcore.python.entrypoint import inspect_tool
 from sandboxcore.python.tracer import LineTracer
 from sandboxcore.trace_writer import TraceWriter, trace_path
 
@@ -97,10 +98,18 @@ def main(argv: Optional[list[str]] = None, finish: Optional[Finish] = None, fini
     parser.add_argument("--workdir", "-w", type=str, required=True)
     # the host passes the trace FIFO in the environment; the flag exists for local use
     parser.add_argument("--trace", "-t", type=str, default=trace_path())
+    # report the entrypoint's signature instead of running the tool (sandboxcore.signature reads it)
+    parser.add_argument("--inspect", action="store_true")
     args = parser.parse_args(argv)
 
     file = Path(args.file)
     workdir = Path(args.workdir)
+
+    if args.inspect:
+        os.chdir(workdir)
+        with open(RESULT_FILE, "w") as f:
+            serializer.dump(inspect_tool(file), f)
+        return
 
     runner(file, workdir, args.trace, finish, finish_label)
 

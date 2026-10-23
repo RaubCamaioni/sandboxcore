@@ -12,6 +12,7 @@ import pytest
 
 from sandboxcore.host import InputFile, Job, JobError, Outcome, OutputFile, PodmanRunner, Sandbox, SandboxConfig
 from sandboxcore.host.podman import SandboxUnavailable
+from sandboxcore.signature import SignatureError
 from sandboxcore.source import Source, SourceError
 from tests import IMAGE
 
@@ -33,11 +34,11 @@ class LocalRunner:
     async def stop(self):
         pass
 
-    async def run(self, tool, run_dir, on_line=None):
+    async def run(self, tool, run_dir, on_line=None, runtime_args=()):
         self.calls.append((tool, run_dir))
         proc = await asyncio.create_subprocess_exec(
             sys.executable, "-m", "sandboxcore.python.runner", "--file", str(tool), "--workdir", str(run_dir),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            *runtime_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
         )
         _, err = await proc.communicate()
         return self.classifier.classify(run_dir, proc.returncode, False, 0.1, err.decode())
@@ -168,3 +169,26 @@ async def test_an_unavailable_sandbox_refuses_before_staging(config):
     with pytest.raises(SandboxUnavailable):
         await s.run(job("def t():\n    return 1\n"))
     assert not config.run_dir.exists() or not any(config.run_dir.iterdir())
+
+
+async def test_inspect_reads_the_signature_in_the_sandbox(sandbox, config, tmp_path):
+    marker = tmp_path / "ran"
+    code = f"from typing import Literal\nopen({str(marker)!r}, 'w')\ndef t(a: int, m: Literal['x', 'y'] = 'x'):\n    pass\n"
+    signature = await sandbox.inspect(Source("python", "t", code))
+    assert [(p.name, p.kind, p.choices) for p in signature.parameters] == [("a", "int", ()), ("m", "choice", ("x", "y"))]
+    assert not marker.exists() and not any(config.run_dir.iterdir())  # nothing ran, nothing kept
+
+
+async def test_inspect_refuses_what_the_allow_list_refuses(sandbox):
+    with pytest.raises(SignatureError, match="Annotation Error"):
+        await sandbox.inspect(Source("python", "t", "def t(a: __import__('os').getcwd()):\n    pass\n"))
+    with pytest.raises(SignatureError, match="Syntax Error"):
+        await sandbox.inspect(Source("python", "t", "def t(:\n"))
+
+
+async def test_inspect_then_bind_then_run(sandbox):
+    source = Source("python", "t", "def t(a: int, b: float = 0.5) -> float:\n    return a + b\n")
+    signature = await sandbox.inspect(source)
+    arguments, files = signature.bind({"a": "2"})
+    r = await sandbox.run(Job(source, arguments, files))
+    assert r.value == 2.5

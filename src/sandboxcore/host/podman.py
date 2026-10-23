@@ -12,7 +12,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional, Sequence
 
 from sandboxcore import serializer
 from sandboxcore.contract import RESULT_FILE, TRACE_ENV, TRACE_ENV_LEGACY, TRACE_FILE
@@ -278,7 +278,9 @@ class PodmanRunner:
             f"--timeout={int(cfg.timeout_seconds)}",
         ]
 
-    def command(self, name: str, tool: Path, run_dir: Path, trace: Optional[Path] = None) -> list[str]:
+    def command(
+        self, name: str, tool: Path, run_dir: Path, trace: Optional[Path] = None, runtime_args: Sequence[str] = ()
+    ) -> list[str]:
         flags = self._limit_flags()
         # keep the "--tmpfs <spec>" form the tests and operators expect
         i = flags.index("--tmpfs=/tmp:rw,size=64m")
@@ -301,10 +303,19 @@ class PodmanRunner:
             str(run_dir / tool.name),
             "--workdir",
             str(run_dir),
+            # a mode such as --inspect: a flag, so an image without the mode fails instead of running the tool
+            *runtime_args,
         ]
 
-    async def run(self, tool: Path, run_dir: Path, on_line: Optional[Callable[[int], None]] = None) -> RunResult:
-        """Run `tool`; with `on_line`, forward the sandbox's executed line numbers as they happen."""
+    async def run(
+        self,
+        tool: Path,
+        run_dir: Path,
+        on_line: Optional[Callable[[int], None]] = None,
+        runtime_args: Sequence[str] = (),
+    ) -> RunResult:
+        """Run `tool`; with `on_line`, forward the sandbox's executed line numbers as they happen.
+        `runtime_args` follow --file and --workdir on the sandbox entrypoint's command line."""
         if not self.available:
             raise SandboxUnavailable(self._unavailable_reason)
         try:
@@ -312,11 +323,13 @@ class PodmanRunner:
         except asyncio.TimeoutError:
             raise SandboxBusy()
         try:
-            return await self._supervise(tool, run_dir, on_line)
+            return await self._supervise(tool, run_dir, on_line, runtime_args)
         finally:
             self._slots.release()
 
-    async def _supervise(self, tool: Path, run_dir: Path, on_line: Optional[Callable[[int], None]]) -> RunResult:
+    async def _supervise(
+        self, tool: Path, run_dir: Path, on_line: Optional[Callable[[int], None]], runtime_args: Sequence[str]
+    ) -> RunResult:
         name = self.container_name(run_dir)
         timed_out = False
         stderr = ""
@@ -330,7 +343,9 @@ class PodmanRunner:
         try:
             try:
                 _, _, stderr = await self._exec(
-                    *self.command(name, tool, run_dir, trace=trace.path if trace is not None else None),
+                    *self.command(
+                        name, tool, run_dir, trace=trace.path if trace is not None else None, runtime_args=runtime_args
+                    ),
                     timeout=self.config.timeout_seconds + SAFETY_NET_SECONDS,
                 )
             except asyncio.TimeoutError:

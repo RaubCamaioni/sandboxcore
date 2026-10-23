@@ -52,3 +52,8 @@ def test_command_passes_trace_path_as_environment_not_a_flag():
     # both names: images built before sandboxcore read only PYWEBTOOLS_TRACE
     for variable in ("SANDBOXCORE_TRACE=/r/x/trace", "PYWEBTOOLS_TRACE=/r/x/trace"):
         assert variable in cmd[:image_at] and cmd[cmd.index(variable) - 1] == "-e"
+
+
+def test_runtime_args_follow_the_workdir():
+    cmd = PodmanRunner(CFG).command("run-x", Path("/r/x/t.py"), Path("/r/x"), runtime_args=("--inspect",))
+    assert cmd[-3:] == ["--workdir", "/r/x", "--inspect"]

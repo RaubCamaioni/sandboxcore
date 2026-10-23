@@ -15,7 +15,7 @@ allow-list, so a row stored before this check existed is refused instead of exec
 import ast
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Literal, get_args, get_origin
 
 SIMPLE_TYPES = {"str": str, "int": int, "float": float, "Path": Path}
 
@@ -65,3 +65,16 @@ def _type_of(node: ast.expr):
             values.append(element.value)
         return Literal[tuple(values)]
     raise AnnotationError(f"annotation must be {ALLOWED}, not {ast.unparse(node)}")
+
+
+KINDS = {str: "str", int: "int", float: "float", Path: "file"}
+
+
+def parameter_kind(text: str) -> tuple[str, tuple, str]:
+    """The language-neutral kind of an annotation ("str", "int", "float", "file" or "choice"), a choice's
+    values, and the canonical text to store; AnnotationError outside the allow-list."""
+    resolved = resolve_annotation(text)  # checks the length and parses with ast: never evaluated
+    canonical = ast.unparse(ast.parse(text, mode="eval").body)
+    if get_origin(resolved) is Literal:
+        return "choice", get_args(resolved), canonical
+    return KINDS[resolved], (), canonical

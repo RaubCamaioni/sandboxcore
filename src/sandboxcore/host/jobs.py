@@ -32,10 +32,13 @@ from sandboxcore.host.rundir import (
     read_run_file,
     upload_path,
 )
+from sandboxcore.signature import Signature, SignatureError, from_report
 from sandboxcore.source import ENTRYPOINT, Source, check_source
 
 logger = logging.getLogger("sandboxcore")
 
+# the runtime mode that reports the entrypoint's signature instead of running the tool
+INSPECT = "--inspect"
 # what a tool may receive as a plain argument; files arrive as InputFile
 PLAIN = (str, int, float, bool, type(None))
 
@@ -181,6 +184,27 @@ class Sandbox:
                 stderr_tail=raw.stderr_tail,
             )
         return Result(Outcome.OK, run, value=value, stderr_tail=raw.stderr_tail, files=files)
+
+    async def inspect(self, source: Source) -> Signature:
+        """The entrypoint signature of `source`, read inside the sandbox without running the code.
+        SignatureError when it can't be inspected or breaks the allow-list; SandboxBusy and
+        SandboxUnavailable as for a run."""
+        if not self.available:
+            raise SandboxUnavailable(self.unavailable_reason)
+        source = check_source(source)
+        run_dir = make_run_dir(self.config.run_dir)
+        try:
+            tool = run_dir / source.filename
+            tool.write_text(source.code, encoding="utf-8")
+            raw = await self.runner.run(tool, run_dir, runtime_args=(INSPECT,))
+        finally:
+            shutil.rmtree(run_dir, ignore_errors=True)
+        if raw.outcome is not Outcome.OK:
+            raise SignatureError(f"The code could not be inspected: {raw.message}")
+        signature = from_report(source.language, raw.results)
+        if signature.entrypoint != source.entrypoint:
+            raise SignatureError("The code could not be inspected")
+        return signature
 
     def output(self, run: str, name: str) -> Optional[OutputFile]:
         """A file of a run this sandbox made and still keeps, by the names in its OutputFile; None for
