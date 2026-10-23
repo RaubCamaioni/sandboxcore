@@ -1,0 +1,35 @@
+#!/bin/sh
+# sandboxcore-adduser <user>: an unprivileged user that runs sandboxcore's rootless podman.
+#
+# Creates the user if needed (no password: key or su/machinectl access only), gives it a sub-uid and
+# sub-gid range of 65536 that overlaps no other user's, and enables lingering so its systemd manager,
+# and with it the cgroup delegation, runs without a login. Running it again changes nothing.
+set -eu
+user=${1:?usage: sandboxcore-adduser <user>}
+[ "$(id -u)" = 0 ] || { echo "sandboxcore-adduser: run as root" >&2; exit 1; }
+
+if ! id "$user" >/dev/null 2>&1; then
+  useradd --create-home --shell /bin/bash --user-group "$user"
+  usermod -p '*' "$user"
+  echo "created user $user"
+fi
+
+for f in subuid subgid; do
+  touch "/etc/$f"
+  if awk -F: -v u="$user" '$1 == u && $3 >= 65536 { found = 1 } END { exit !found }' "/etc/$f"; then
+    echo "/etc/$f: $user already has a range"
+  else
+    start=$(awk -F: 'BEGIN { m = 100000 } NF == 3 && $2 + $3 > m { m = $2 + $3 } END { print m }' "/etc/$f")
+    usermod "--add-sub${f#sub}s" "$start-$((start + 65535))" "$user"
+    echo "/etc/$f: $user gets $start-$((start + 65535))"
+  fi
+done
+
+uid=$(id -u "$user")
+if loginctl enable-linger "$user" 2>/dev/null; then
+  echo "lingering enabled for $user"
+  systemctl start "user@$uid.service" 2>/dev/null || true
+else
+  echo "could not enable lingering (is systemd running?): loginctl enable-linger $user" >&2
+fi
+echo "check it: sudo -u $user XDG_RUNTIME_DIR=/run/user/$uid sandboxcore-doctor"

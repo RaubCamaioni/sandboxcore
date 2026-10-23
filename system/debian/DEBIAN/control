@@ -1,0 +1,14 @@
+Package: sandboxcore-host
+Version: 0.0.0
+Architecture: all
+Maintainer: Raub Camaioni <raubcameo@gmail.com>
+Section: admin
+Priority: optional
+Depends: podman (>= 4.4), uidmap, fuse-overlayfs, passt | slirp4netns, systemd, passwd, python3 (>= 3.10)
+Homepage: https://github.com/RaubCamaioni/sandboxcore
+Description: host setup for running untrusted code in rootless podman
+ Prepares a Debian or Ubuntu host for sandboxcore: rootless podman and its
+ helpers, cgroup delegation (cpu cpuset io memory pids) to every user's
+ systemd manager so container limits are enforced, sandboxcore-adduser to
+ create an unprivileged user with a sub-uid range and lingering, and
+ sandboxcore-doctor to check the result.

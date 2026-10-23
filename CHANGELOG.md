@@ -5,6 +5,24 @@
 Extracted from PyTools v0.3.6 and cadquery-catalog v0.4.2, which carried the same sandbox code
 (first as `containerwebcore`; renamed before the first release: the core holds no web code).
 
+The core's boundary: untrusted code and inputs in, a checked result out; no web code.
+
+- **Job API** (`sandboxcore.host`): `Sandbox.run(Job)` stages code, plain arguments and uploaded bytes,
+  runs the tool, and turns every path it returned into an `OutputFile` (a regular file inside the run,
+  reached without symlinks, not the run's own files), or refuses the run. `Sandbox.output(run, name)`
+  serves downloads. Apps no longer create run directories, write args.json or trust result paths.
+- **Taking code**: `accept_source` (size, UTF-8, NUL, identifier entrypoint). `Sandbox.inspect` reads the
+  entrypoint's signature inside the sandbox (the runtime's `--inspect`), and `sandboxcore.signature`
+  checks the report against the allow-list. `Signature.bind` converts form values by kind. The web app
+  no longer parses uploaded code.
+- **System**: `system/` holds the `sandboxcore-host` Debian package (rootless podman, cgroup delegation,
+  `sandboxcore-adduser`), the base image the app containers build from (the nested-podman setup both
+  apps repeated), and `sandboxcore-doctor`, which checks the system and self-tests the limits.
+- Run directories are removed on `stop()` even when their cleanup task never started. The apps' own
+  shutdown code had this gap.
+- Moved out to the apps: the browser trace stream (`TraceChannel`/`TraceRegistry`) and the download path
+  check (`resolve_run_file`, replaced by `Sandbox.output`).
+
 Changes from the copies in the apps:
 
 - **Security:** a FIFO, symlink or oversized file named `result.json` is refused through `read_run_file`,

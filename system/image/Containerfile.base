@@ -1,0 +1,46 @@
+# sandboxcore base image: an app container that runs untrusted code in nested rootless podman.
+#
+# systemd is PID 1; user `podman` (uid 1000) has a systemd user manager with every cgroup controller
+# delegated, so the inner podman enforces --cpus/--memory/--pids-limit on each sandbox, and a
+# sub-uid range (2000-61999) that the sandboxes' uid 1001 maps into: a sandbox shares no uid with the
+# app. An app image adds its own venv and a user unit for `podman`:
+#
+#   FROM docker.io/raubcamaioni/sandboxcore-base:<version>
+#   COPY ... /venvs/server ...
+#   COPY --chown=podman:podman app.service /home/podman/.config/systemd/user/app.service
+#   RUN ln -s ../app.service /home/podman/.config/systemd/user/default.target.wants/app.service
+#
+# Run it with: --device /dev/fuse --security-opt unmask=ALL (and a named volume on
+# /home/podman/.local/share/containers for the inner image store). Why each knob exists:
+# docs/history/2026-10-19-podman-sandbox-runner-design.md. Check a running container with
+#   podman exec --user podman -e XDG_RUNTIME_DIR=/run/user/1000 <name> sandboxcore-doctor
+
+FROM registry.access.redhat.com/ubi9/ubi-init
+
+RUN dnf install -y podman fuse-overlayfs shadow-utils python3.12 python3.12-pip && dnf clean all
+
+# Unprivileged user that runs the app and the inner podman. Its sub-UID range must fit inside
+# the 65536 UIDs the container receives. newuidmap keeps its file capability: do not setuid it.
+RUN useradd -u 1000 -m podman && usermod -p "*" podman && \
+  echo "podman:2000:60000" > /etc/subuid && echo "podman:2000:60000" > /etc/subgid && \
+  mkdir -p /var/lib/systemd/linger && touch /var/lib/systemd/linger/podman
+
+# systemd user manager for `podman`: started at boot, all controllers delegated
+COPY system/image/user@.service.d-container.conf /etc/systemd/system/user@.service.d/container.conf
+RUN mkdir -p /etc/systemd/system/multi-user.target.wants && \
+  ln -s /usr/lib/systemd/system/user@.service /etc/systemd/system/multi-user.target.wants/user@1000.service
+
+# inner podman configuration
+COPY system/image/containers.conf.d-nested.conf /etc/containers/containers.conf.d/nested.conf
+COPY --chown=podman:podman system/image/storage.conf /home/podman/.config/containers/storage.conf
+# the inner image store is a named volume; podman gives a new volume this directory's ownership
+RUN mkdir -p /home/podman/.local/share/containers /home/podman/.config/systemd/user/default.target.wants && \
+  chown -R podman:podman /home/podman/.local /home/podman/.config && \
+  mkdir -p /data && chown podman:podman /data
+
+# the doctor, standard library only
+COPY src/sandboxcore/doctor.py /usr/local/bin/sandboxcore-doctor
+RUN sed -i '1i #!/usr/bin/python3.12' /usr/local/bin/sandboxcore-doctor && chmod 755 /usr/local/bin/sandboxcore-doctor
+
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

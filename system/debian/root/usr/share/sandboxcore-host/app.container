@@ -1,0 +1,23 @@
+# Example quadlet unit for an app built FROM sandboxcore-base, run by a sandboxcore-adduser user:
+#   ~<user>/.config/containers/systemd/<app>.container, then: systemctl --user daemon-reload && systemctl --user start <app>
+[Unit]
+Description=<app> (sandboxcore)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/raubcamaioni/<app>:latest
+ContainerName=<app>
+# the nested sandboxes need both: fuse-overlayfs for the inner image store, and a fresh /proc for each
+# sandbox (see docs/history/2026-10-19-podman-sandbox-runner-design.md in sandboxcore)
+AddDevice=/dev/fuse
+PodmanArgs=--security-opt unmask=ALL --memory=3g
+Volume=<app>-inner-store:/home/podman/.local/share/containers
+Volume=%h/<app>/data:/data
+PublishPort=127.0.0.1:8080:8080
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

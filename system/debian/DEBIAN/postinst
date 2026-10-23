@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+if [ "$1" = "configure" ] && [ -d /run/systemd/system ]; then
+  systemctl daemon-reload || true
+  echo "sandboxcore-host: user managers already running get the cgroup delegation after"
+  echo "  systemctl restart user@<uid>.service   (this stops that user's services)"
+fi
