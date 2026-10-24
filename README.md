@@ -20,6 +20,11 @@ belong to the apps that use it: [PyTools](https://github.com/RaubCamaioni/PyTool
 
 Standard library only, Python 3.12+. Design and trust boundary: [docs/design.md](docs/design.md).
 
+**Languages.** The container, the args/result contract, the checks and the system setup do not depend
+on the language of the uploaded code; each language needs a runtime inside the image. Python is the
+first full runtime (`sandboxcore.python`). Go has the trace reference so far; its runtime will compile
+inside the sandbox, under the same limits, never on the host.
+
 ## Install
 
 Pin a release tag. The tarball needs no git in an image build:
