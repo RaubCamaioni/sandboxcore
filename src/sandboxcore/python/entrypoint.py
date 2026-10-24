@@ -2,7 +2,8 @@
 
 `--inspect` on the runner writes this report to result.json instead of calling the tool:
 
-    {"entrypoint": "tool", "parameters": [{"name": "x", "annotation": "int", "default": "3"}, ...]}
+    {"entrypoint": "tool", "parameters": [{"name": "x", "annotation": "int", "default": "3"}, ...],
+     "returns": "str"}  # the declared return annotation as text, None when there is none
     {"error": "Python Syntax Error: line 4"}
 
 Parsing untrusted code is itself a risk (a parser can be driven into deep recursion or huge memory),
@@ -38,7 +39,8 @@ def inspect_tool(file: Path) -> dict:
                 "default": _default_text(default),
             }
         )
-    return {"entrypoint": name, "parameters": parameters}
+    returns = ast.unparse(entry.returns) if entry.returns is not None else None
+    return {"entrypoint": name, "parameters": parameters, "returns": returns}
 
 
 def _default_text(node) -> str | None:
