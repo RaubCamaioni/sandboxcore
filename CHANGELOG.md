@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 (2026-10-23)
+
+- `sandboxcore.__version__` matches the package version (0.2.0 shipped with `0.1.0` there, which failed
+  the release check). No behaviour change.
+
 ## 0.2.0 (2026-10-23)
 
 - **Declared return:** the Python runtime's `--inspect` report carries `"returns"`, the entrypoint's
