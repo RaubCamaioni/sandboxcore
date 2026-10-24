@@ -24,6 +24,7 @@ def test_parameters_annotations_and_defaults_are_reported(tmp_path):
             {"name": "d", "annotation": "Path", "default": "None"},
             {"name": "e", "annotation": None, "default": "3"},
         ],
+        "returns": None,
     }
 
 
@@ -52,3 +53,12 @@ def test_the_runner_writes_the_report_with_inspect(tmp_path):
     report = json.loads((tmp_path / "result.json").read_text())
     assert report["parameters"] == [{"name": "a", "annotation": "int", "default": None}]
     assert not (tmp_path / "ran").exists()
+
+
+def test_the_declared_return_is_reported(tmp_path):
+    code = "import cadquery as cq\ndef box(size: float = 1) -> cq.Workplane:\n    pass\n"
+    assert inspect_tool(tool(tmp_path, code, "box"))["returns"] == "cq.Workplane"
+
+
+def test_no_declared_return_is_none(tmp_path):
+    assert inspect_tool(tool(tmp_path, "def t(x: int = 1):\n    pass\n"))["returns"] is None

@@ -42,6 +42,9 @@ class Signature:
     language: str
     entrypoint: str
     parameters: tuple[Parameter, ...]
+    # the declared return annotation as text (e.g. "cq.Workplane"), None when there is none. Apps use it to
+    # decide how to treat a tool's result; it is not part of the stored arguments
+    returns: Optional[str] = None
 
     # --- storage: the {name: (annotation, default)} shape the apps keep in their databases ---
 
@@ -156,5 +159,8 @@ def from_report(language: str, report: Any) -> Signature:
         except ValueError as e:
             raise SignatureError(f"Annotation Error: '{name}': {e}") from None
         checked.append(Parameter(name, kind, canonical, default, choices))
-    return Signature(language, entrypoint, tuple(checked))
+    returns = report.get("returns")
+    if returns is not None and (not isinstance(returns, str) or len(returns) > MAX_TEXT):
+        raise SignatureError("Annotation Error: unsupported return annotation")
+    return Signature(language, entrypoint, tuple(checked), returns)
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 (2026-10-23)
+
+- **Declared return:** the Python runtime's `--inspect` report carries `"returns"`, the entrypoint's
+  return annotation as text (`None` when there is none), and `Signature.returns` keeps it after checking
+  it is text of at most 4096 characters. Apps use it to decide how to treat a tool's result (PyTools: a
+  CadQuery return makes the tool a model). Optional in the report, so other runtimes need no change.
+
 ## 0.1.0 (2026-10-23)
 
 Extracted from PyTools v0.3.6 and cadquery-catalog v0.4.2, which carried the same sandbox code

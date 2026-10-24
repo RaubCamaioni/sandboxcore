@@ -96,3 +96,14 @@ def test_a_stored_signature_is_checked_again():
     assert Signature.from_arguments("python", "t", SIG.to_arguments()) == SIG
     with pytest.raises(SignatureError):
         Signature.from_arguments("python", "t", {"a": ("open('/etc/passwd')", None)})
+
+
+def test_the_declared_return_is_kept():
+    assert from_report("python", {"entrypoint": "t", "parameters": [], "returns": "cq.Workplane"}).returns == "cq.Workplane"
+    assert from_report("python", {"entrypoint": "t", "parameters": []}).returns is None
+
+
+@pytest.mark.parametrize("returns", [5, ["cq.Workplane"], "x" * 5000], ids=["int", "list", "too-long"])
+def test_an_out_of_shape_return_is_refused(returns):
+    with pytest.raises(SignatureError, match="return annotation"):
+        from_report("python", {"entrypoint": "t", "parameters": [], "returns": returns})
